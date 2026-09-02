@@ -42,6 +42,17 @@ export type BtcRegimeView = {
   timeframes: Partial<Record<TimeframeLabel, RegimeCode>>;
 };
 
+/** One point of the Bitcoin regime trend chart. */
+export type RegimeTrendPoint = {
+  /** Eixo X: hora da análise ("14:35"). */
+  time: string;
+  /** Eixo Y: -2 (short strong) .. +2 (long strong). */
+  score: number;
+  regime: RegimeCode;
+  /** Rótulo pronto para o usuário ("Strong Bullish"). */
+  label: string;
+};
+
 /** A coin ranking row. `score` is a percentage for reliability rankings. */
 export type CoinRank = {
   symbol: string;
@@ -50,6 +61,7 @@ export type CoinRank = {
 
 export type HomeData = {
   btc: BtcRegimeView;
+  btcTrend: RegimeTrendPoint[];
   longSignals: Signal[];
   shortSignals: Signal[];
   reliableCoins: CoinRank[];

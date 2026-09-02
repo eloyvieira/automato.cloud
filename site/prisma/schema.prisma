@@ -161,8 +161,8 @@ model MarketRegime {
   aiConfidence Decimal? @map("ai_confidence") @db.Decimal(5, 2)
   data        Json?
   analyzedAt  DateTime @map("analyzed_at")
-
-  @@unique([symbol, quoteAsset, timeframe], map: "uq_market_regime")
+  
+  @@index([symbol, quoteAsset, timeframe, analyzedAt], map: "idx_market_regime_history")
   @@index([regime, timeframe], map: "idx_regime")
   @@map("market_regimes")
 }

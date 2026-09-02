@@ -8,12 +8,13 @@
  */
 import { prisma } from './prisma';
 import { CACHE_KEYS, CACHE_TTL, getCached } from './redis';
-import { formatAge, formatPrice } from './format';
+import { formatAge, formatClock, formatPrice, regimeLabel, regimeScore } from './format';
 import type {
   BtcRegimeView,
   CoinRank,
   HomeData,
   RegimeCode,
+  RegimeTrendPoint,
   Signal,
   TimeframeLabel,
 } from './home-types';
@@ -31,6 +32,7 @@ const HEADLINE_TIMEFRAME: TimeframeLabel = '1h';
 /** Window used by the "7 day view" rankings. */
 const RANKING_WINDOW_DAYS = 7;
 
+
 const TIMEFRAME_LABEL = {
   fifteen_m: '15m',
   one_h: '1h',
@@ -46,6 +48,10 @@ const STRATEGY_LABEL = {
 
 type PrismaTimeframe = keyof typeof TIMEFRAME_LABEL;
 type PrismaStrategy = keyof typeof STRATEGY_LABEL;
+
+/** Timeframe e número de leituras do gráfico de tendência do hero. */
+const TREND_TIMEFRAME: PrismaTimeframe = 'fifteen_m';
+const TREND_POINTS = 7;
 
 /** Cached row shapes: plain JSON only (no Decimal, no Date, no BigInt). */
 type MarketRegimeRow = {
@@ -118,6 +124,51 @@ export function getBtcRegimeRows(): Promise<MarketRegimeRow[]> {
       });
 
       return rows.map((row) => ({
+        symbol: row.symbol,
+        quoteAsset: row.quoteAsset,
+        timeframe: row.timeframe as PrismaTimeframe,
+        regime: row.regime as RegimeCode,
+        strength: toNumber(row.strength),
+        aiConfidence: toNumber(row.aiConfidence),
+        analyzedAt: row.analyzedAt.toISOString(),
+      }));
+    },
+    CACHE_TTL,
+  );
+}
+
+/**
+ * Últimas leituras de regime do BTC no timeframe do gráfico, em ordem
+ * cronológica (mais antiga primeiro).
+ *
+ * Atenção: `market_regimes` tem UNIQUE (symbol, quote_asset, timeframe), ou
+ * seja, guarda apenas o estado atual - uma linha por timeframe. Enquanto não
+ * existir histórico, esta consulta devolve no máximo 1 ponto.
+ */
+export function getBtcRegimeTrendRows(): Promise<MarketRegimeRow[]> {
+  return getCached<MarketRegimeRow[]>(
+    CACHE_KEYS.btcRegimeTrend(TIMEFRAME_LABEL[TREND_TIMEFRAME], TREND_POINTS),
+    async () => {
+      const rows = await prisma.marketRegime.findMany({
+        where: {
+          symbol: BTC_SYMBOL,
+          quoteAsset: BTC_QUOTE_ASSET,
+          timeframe: TREND_TIMEFRAME,
+        },
+        select: {
+          symbol: true,
+          quoteAsset: true,
+          timeframe: true,
+          regime: true,
+          strength: true,
+          aiConfidence: true,
+          analyzedAt: true,
+        },
+        orderBy: { analyzedAt: 'desc' },
+        take: TREND_POINTS,
+      });
+
+      return rows.reverse().map((row) => ({
         symbol: row.symbol,
         quoteAsset: row.quoteAsset,
         timeframe: row.timeframe as PrismaTimeframe,
@@ -270,6 +321,15 @@ function toBtcRegimeView(rows: MarketRegimeRow[], now: number): BtcRegimeView {
   };
 }
 
+function toRegimeTrendPoint(row: MarketRegimeRow): RegimeTrendPoint {
+  return {
+    time: formatClock(row.analyzedAt),
+    score: regimeScore(row.regime),
+    regime: row.regime,
+    label: regimeLabel(row.regime),
+  };
+}
+
 function toSignalView(row: SignalRow, now: number): Signal {
   return {
     id: row.id,
@@ -298,6 +358,10 @@ export async function getBtcRegime(): Promise<BtcRegimeView> {
   return toBtcRegimeView(await getBtcRegimeRows(), Date.now());
 }
 
+export async function getBtcRegimeTrend(): Promise<RegimeTrendPoint[]> {
+  return (await getBtcRegimeTrendRows()).map(toRegimeTrendPoint);
+}
+
 export async function getTopLongSignals(limit = 5): Promise<Signal[]> {
   const now = Date.now();
   return (await getTopLongSignalRows(limit)).map((row) => toSignalView(row, now));
@@ -320,8 +384,9 @@ export async function getProfitableCoins(limit = 5): Promise<CoinRank[]> {
 export async function getHomeData(): Promise<HomeData> {
   const now = Date.now();
 
-  const [btcRows, longRows, shortRows, reliableRows] = await Promise.all([
+  const [btcRows, btcTrendRows, longRows, shortRows, reliableRows] = await Promise.all([
     getBtcRegimeRows(),
+    getBtcRegimeTrendRows(),
     getTopLongSignalRows(5),
     getTopShortSignalRows(5),
     getReliableCoinRows(5),
@@ -329,6 +394,7 @@ export async function getHomeData(): Promise<HomeData> {
 
   return {
     btc: toBtcRegimeView(btcRows, now),
+    btcTrend: btcTrendRows.map(toRegimeTrendPoint),
     longSignals: longRows.map((row) => toSignalView(row, now)),
     shortSignals: shortRows.map((row) => toSignalView(row, now)),
     reliableCoins: reliableRows.map(toCoinRank),

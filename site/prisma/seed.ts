@@ -47,15 +47,51 @@ async function main() {
 
   console.log('Seeding BTC market regimes...');
   const btcRegimes = [
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'LONG_WEAK' as const, strength: 58.4, aiConfidence: 64.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'NEUTRAL' as const, strength: 42.7, aiConfidence: 55.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'LONG_STRONG' as const, strength: 81.2, aiConfidence: 87.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'SHORT_WEAK' as const, strength: 54.8, aiConfidence: 62.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'LONG_STRONG' as const, strength: 76.9, aiConfidence: 82.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'SHORT_STRONG' as const, strength: 84.3, aiConfidence: 89.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'LONG_WEAK' as const, strength: 63.1, aiConfidence: 71.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'NEUTRAL' as const, strength: 46.2, aiConfidence: 57.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'SHORT_WEAK' as const, strength: 59.7, aiConfidence: 68.0 },
     { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'fifteen_m' as const, regime: 'LONG_STRONG' as const, strength: 82.5, aiConfidence: 88.0 },
+  
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'LONG_WEAK' as const, strength: 61.2, aiConfidence: 69.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'LONG_STRONG' as const, strength: 78.6, aiConfidence: 84.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'NEUTRAL' as const, strength: 44.3, aiConfidence: 56.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'SHORT_WEAK' as const, strength: 57.8, aiConfidence: 65.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'LONG_STRONG' as const, strength: 80.1, aiConfidence: 86.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'SHORT_STRONG' as const, strength: 83.0, aiConfidence: 88.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'LONG_WEAK' as const, strength: 64.5, aiConfidence: 73.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'NEUTRAL' as const, strength: 48.0, aiConfidence: 59.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'SHORT_WEAK' as const, strength: 60.3, aiConfidence: 70.0 },
     { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_h' as const, regime: 'LONG_STRONG' as const, strength: 79.0, aiConfidence: 85.0 },
+  
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'NEUTRAL' as const, strength: 41.5, aiConfidence: 53.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'LONG_WEAK' as const, strength: 56.8, aiConfidence: 66.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'LONG_STRONG' as const, strength: 75.4, aiConfidence: 81.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'SHORT_WEAK' as const, strength: 55.7, aiConfidence: 63.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'NEUTRAL' as const, strength: 47.9, aiConfidence: 58.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'SHORT_STRONG' as const, strength: 79.6, aiConfidence: 84.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'LONG_WEAK' as const, strength: 60.2, aiConfidence: 70.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'LONG_STRONG' as const, strength: 77.3, aiConfidence: 83.0 },
+    { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'SHORT_WEAK' as const, strength: 58.9, aiConfidence: 67.0 },
     { symbol: 'BTC', quoteAsset: 'USDT' as const, timeframe: 'one_d' as const, regime: 'LONG_WEAK' as const, strength: 61.0, aiConfidence: 72.0 },
   ];
-  for (const r of btcRegimes) {
-    await prisma.marketRegime.upsert({
-      where: { symbol_quoteAsset_timeframe: { symbol: r.symbol, quoteAsset: r.quoteAsset, timeframe: r.timeframe } },
-      update: { regime: r.regime, strength: r.strength, aiConfidence: r.aiConfidence, analyzedAt: new Date() },
-      create: { ...r, analyzedAt: new Date() },
+  
+  const nowr = Date.now();
+
+  for (let i = 0; i < btcRegimes.length; i++) {
+    const r = btcRegimes[i];
+    const position = i % 10;
+  
+    await prisma.marketRegime.create({
+      data: {
+        ...r,
+        analyzedAt: new Date(nowr - (9 - position) * 5 * 60 * 1000),
+      },
     });
   }
 

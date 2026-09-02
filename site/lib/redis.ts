@@ -35,6 +35,8 @@ if (process.env.NODE_ENV !== 'production') globalForRedis.redis = redis;
  */
 export const CACHE_KEYS = {
   btcRegime: 'market:btc:regime',
+  btcRegimeTrend: (timeframe: string, points: number) =>
+    `market:btc:regime:trend:${timeframe}:${points}`,
   topLong: (limit: number) => `signals:long:top:${limit}`,
   topShort: (limit: number) => `signals:short:top:${limit}`,
   rankingReliable: (windowDays: number, limit: number) =>

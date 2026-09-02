@@ -45,10 +45,66 @@ export function regimeTone(regime: RegimeCode | string | null): Direction | 'neu
   return 'neutral';
 }
 
+/**
+ * Human label for each regime code. Edit here to change the wording used
+ * across the whole app (hero badges, methodology table, rankings).
+ */
+const REGIME_LABEL: Record<RegimeCode, string> = {
+  LONG_STRONG: 'Strong Bullish',
+  LONG_WEAK: 'Bullish regime with lower conviction',
+  NEUTRAL: 'No Confirmed Direction',
+  SHORT_WEAK: 'Bearish regime with lower conviction',
+  SHORT_STRONG: 'Strong Bearish',
+};
+
 /** Maps a regime code to its human label. */
 export function regimeLabel(regime: RegimeCode | string | null): string {
+  if (regime && regime in REGIME_LABEL) return REGIME_LABEL[regime as RegimeCode];
+
+  // Unknown/missing code: fall back to the tone so the UI never shows a blank.
   const tone = regimeTone(regime);
   if (tone === 'long') return 'Bullish';
   if (tone === 'short') return 'Bearish';
-  return 'Balanced';
+  return 'Neutral';
+}
+
+/**
+ * Valor numérico de cada regime, usado para desenhar a curvatura do gráfico:
+ * acima de zero = alta, zero = horizontal (neutro), abaixo de zero = baixa.
+ */
+export const REGIME_SCORE: Record<RegimeCode, number> = {
+  LONG_STRONG: 2,
+  LONG_WEAK: 1,
+  NEUTRAL: 0,
+  SHORT_WEAK: -1,
+  SHORT_STRONG: -2,
+};
+
+export const REGIME_SCORE_MIN = -2;
+export const REGIME_SCORE_MAX = 2;
+
+/** Regime -> número. Códigos desconhecidos caem no tom (alta/baixa/neutro). */
+export function regimeScore(regime: RegimeCode | string | null): number {
+  if (regime && regime in REGIME_SCORE) return REGIME_SCORE[regime as RegimeCode];
+
+  const tone = regimeTone(regime);
+  if (tone === 'long') return REGIME_SCORE.LONG_WEAK;
+  if (tone === 'short') return REGIME_SCORE.SHORT_WEAK;
+  return REGIME_SCORE.NEUTRAL;
+}
+
+/** Número -> regime, para rotular o eixo Y do gráfico. */
+export function regimeByScore(score: number): RegimeCode | null {
+  const found = Object.entries(REGIME_SCORE).find(([, value]) => value === score);
+  return found ? (found[0] as RegimeCode) : null;
+}
+
+/** Hora "HH:MM" de um timestamp, calculada no servidor. */
+export function formatClock(timestamp: string | Date | null | undefined): string {
+  if (!timestamp) return '--';
+
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '--';
+
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
