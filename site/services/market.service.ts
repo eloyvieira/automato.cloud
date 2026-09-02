@@ -1,17 +1,10 @@
 import { prisma } from '../lib/prisma';
-import { redis, CACHE_KEYS, CACHE_TTL } from '../lib/redis';
+import { getBtcRegimeRows } from '../lib/home-data';
 import { jsonSafe } from '../lib/serializer';
 
+/** BTC regime rows (one per timeframe), cached in Redis for 5 minutes. */
 export async function getBtcRegime() {
-  const cached = await redis.get(CACHE_KEYS.btcRegime).catch(() => null);
-  if (cached) return JSON.parse(cached);
-
-  const regimes = await prisma.marketRegime.findMany({
-    where: { symbol: 'BTC', quoteAsset: 'USDT' },
-  });
-  const safe = jsonSafe(regimes);
-  await redis.set(CACHE_KEYS.btcRegime, JSON.stringify(safe), 'EX', CACHE_TTL).catch(() => {});
-  return safe;
+  return getBtcRegimeRows();
 }
 
 export async function getLastUpdate() {

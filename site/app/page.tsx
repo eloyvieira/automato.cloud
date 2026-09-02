@@ -1,84 +1,36 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, BrainCircuit, Check, ChevronRight, Clock3, Code2, LockKeyhole, Menu, ShieldCheck, Target, X } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Clock3, Code2, ShieldCheck, Target } from 'lucide-react';
+import { BtcRegimeCard } from '@/components/home/BtcRegimeCard';
+import { OpportunityTable } from '@/components/home/OpportunityTable';
+import { PremiumPreviewProvider } from '@/components/home/PremiumPreview';
+import { ReliableCoinsCard } from '@/components/home/ReliableCoinsCard';
+import { SignalCard } from '@/components/home/SignalCard';
+import { SiteHeader } from '@/components/home/SiteHeader';
+import { getSession } from '@/lib/auth';
+import { getHomeData } from '@/lib/home-data';
+import { hasPremiumAccess } from '@/lib/permissions';
 
-type Direction = 'long' | 'short';
+// Market data is cached in Redis for 5 minutes, so the page itself renders per
+// request (it also reads the session cookie).
+export const dynamic = 'force-dynamic';
 
-type Signal = {
-  symbol: string;
-  regime: string;
-  reliability: number;
-  strategy: string;
-  timeframe: string;
-  age: string;
-  entry: string;
-  stop: string;
-  tp1: string;
-  tp2: string;
-};
+export default async function Home() {
+  const [{ btc, longSignals, shortSignals, reliableCoins }, session] = await Promise.all([
+    getHomeData(),
+    getSession(),
+  ]);
 
-const longSignals: Signal[] = [
-  { symbol: 'SOL/USDT', regime: 'LONG_STRONG', reliability: 82, strategy: 'Scalping', timeframe: '15m', age: '14 min ago', entry: '203.42', stop: '198.75', tp1: '208.90', tp2: '214.30' },
-  { symbol: 'ETH/USDT', regime: 'LONG_STRONG', reliability: 79, strategy: 'Day', timeframe: '1h', age: '18 min ago', entry: '3,642.18', stop: '3,531.40', tp1: '3,720.50', tp2: '3,890.90' },
-  { symbol: 'LINK/USDT', regime: 'LONG_WEAK', reliability: 77, strategy: 'Swing', timeframe: '4h', age: '24 min ago', entry: '15.28', stop: '14.60', tp1: '15.85', tp2: '16.42' },
-  { symbol: 'AVAX/USDT', regime: 'LONG_WEAK', reliability: 74, strategy: 'Day', timeframe: '1h', age: '32 min ago', entry: '24.91', stop: '23.74', tp1: '25.78', tp2: '26.90' },
-  { symbol: 'SUI/USDT', regime: 'LONG_WEAK', reliability: 72, strategy: 'Scalping', timeframe: '15m', age: '41 min ago', entry: '1.845', stop: '1.756', tp1: '1.915', tp2: '1.985' },
-];
+  const premium = session ? await hasPremiumAccess(session.userId) : false;
 
-const shortSignals: Signal[] = [
-  { symbol: 'DOGE/USDT', regime: 'SHORT_STRONG', reliability: 76, strategy: 'Scalping', timeframe: '15m', age: '15 min ago', entry: '0.1234', stop: '0.1278', tp1: '0.1189', tp2: '0.1162' },
-  { symbol: 'PEPE/USDT', regime: 'SHORT_STRONG', reliability: 74, strategy: 'Day', timeframe: '1h', age: '21 min ago', entry: '0.00001123', stop: '0.00001168', tp1: '0.00001078', tp2: '0.00001030' },
-  { symbol: 'ARB/USDT', regime: 'SHORT_WEAK', reliability: 71, strategy: 'Swing', timeframe: '4h', age: '28 min ago', entry: '1.156', stop: '1.192', tp1: '1.102', tp2: '1.064' },
-  { symbol: 'OP/USDT', regime: 'SHORT_WEAK', reliability: 69, strategy: 'Day', timeframe: '1h', age: '35 min ago', entry: '1.789', stop: '1.845', tp1: '1.712', tp2: '1.641' },
-  { symbol: 'WIF/USDT', regime: 'SHORT_WEAK', reliability: 68, strategy: 'Scalping', timeframe: '15m', age: '44 min ago', entry: '2.345', stop: '2.416', tp1: '2.276', tp2: '2.116' },
-];
-
-const reliableCoins = [
-  ['SOL/USDT', 82], ['ETH/USDT', 79], ['LINK/USDT', 77], ['BNB/USDT', 75], ['AVAX/USDT', 74],
-];
-
-function RegimeBadge({ children, tone = 'long' }: { children: string; tone?: Direction | 'neutral' }) {
-  const toneClass = tone === 'short' ? 'border-red-500/20 bg-red-500/10 text-red-400' : tone === 'neutral' ? 'border-amber-400/20 bg-amber-400/10 text-amber-300' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400';
-  return <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-semibold tracking-wide ${toneClass}`}>{children}</span>;
-}
-
-function SignalCard({ signal, direction, premium }: { signal: Signal; direction: Direction; premium: boolean }) {
-  return (
-    <article className="group rounded-xl border border-white/[0.08] bg-[#121923] p-4 transition hover:border-white/20 hover:bg-[#151f2b]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-white">{signal.symbol}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2"><RegimeBadge tone={direction}>{signal.regime}</RegimeBadge><span className="text-xs text-slate-500">{signal.age}</span></div>
-        </div>
-        <div className="text-right"><p className="text-lg font-semibold text-emerald-400">{signal.reliability}%</p><p className="text-[10px] uppercase tracking-wider text-slate-500">reliability</p></div>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-y-3 text-xs"><div><p className="text-slate-500">Strategy</p><p className="mt-1 text-slate-200">{signal.strategy}</p></div><div><p className="text-slate-500">Timeframe</p><p className="mt-1 text-slate-200">{signal.timeframe}</p></div></div>
-      <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3 text-xs">
-        {[['Entry', signal.entry], ['Stop loss', signal.stop], ['Take profit 1', signal.tp1], ['Take profit 2', signal.tp2]].map(([label, value]) => <div key={label}><p className="text-slate-500">{label}</p><p className={`mt-1 font-medium ${premium ? 'text-slate-100' : 'text-slate-600 blur-[3px] select-none'}`}>{premium ? value : '••••••'}</p></div>)}
-      </div>
-      {!premium && <Link href="/pricing" className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] py-2 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/15"><LockKeyhole size={13} /> Unlock full signal <ArrowRight size={13} /></Link>}
-    </article>
-  );
-}
-
-function OpportunityTable({ title, signals, direction, premium }: { title: string; signals: Signal[]; direction: Direction; premium: boolean }) {
-  return <div className="rounded-xl border border-white/[0.08] bg-[#121923] p-4"><div className="mb-4 flex items-center justify-between"><h3 className={`text-sm font-semibold ${direction === 'long' ? 'text-emerald-400' : 'text-red-400'}`}>{title}</h3><Link href="/signals" className="text-xs text-slate-500 transition hover:text-white">View all <ChevronRight className="inline" size={13} /></Link></div><div className="space-y-3">{signals.map((signal, index) => <div key={signal.symbol} className="grid grid-cols-[18px_1fr_auto_auto] items-center gap-2 text-xs"><span className="text-slate-600">{index + 1}</span><span className="font-medium text-slate-200">{signal.symbol}</span><RegimeBadge tone={direction}>{signal.regime}</RegimeBadge><span className="text-slate-500">{signal.age}</span></div>)}</div><div className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] text-slate-500">Prices and execution levels are available with Premium.</div></div>;
-}
-
-export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [premium, setPremium] = useState(false);
-  return <div className="min-h-screen bg-[#080d14] text-slate-200">
-    <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#080d14]/90 backdrop-blur-xl"><div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-5 lg:px-8"><Link href="/" className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-400"><BrainCircuit size={20} /></span><span className="text-lg font-semibold tracking-tight text-white">automato<span className="text-emerald-400">.</span></span></Link><nav className="hidden items-center gap-7 text-sm text-slate-400 md:flex"><Link className="transition hover:text-white" href="#signals">Signals</Link><Link className="transition hover:text-white" href="/rankings">Rankings</Link><Link className="transition hover:text-white" href="#methodology">How it works</Link><Link className="transition hover:text-white" href="/pricing">Pricing</Link><Link className="transition hover:text-white" href="/api-docs">API</Link></nav><div className="hidden items-center gap-4 md:flex"><button onClick={() => setPremium((value) => !value)} className="text-xs text-slate-500 hover:text-white">{premium ? 'Preview free view' : 'Preview premium'}</button><Link href="/login" className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white transition hover:border-emerald-400/40 hover:text-emerald-400">Log in</Link><Link href="/register" className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-[#07100b] transition hover:bg-emerald-300">Get started</Link></div><button className="text-slate-300 md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Open navigation">{menuOpen ? <X /> : <Menu />}</button></div>{menuOpen && <nav className="border-t border-white/[0.07] px-5 py-4 md:hidden"><div className="flex flex-col gap-4 text-sm text-slate-300"><Link href="#signals" onClick={() => setMenuOpen(false)}>Signals</Link><Link href="/rankings">Rankings</Link><Link href="#methodology" onClick={() => setMenuOpen(false)}>How it works</Link><Link href="/pricing">Pricing</Link><Link href="/login">Log in</Link></div></nav>}</header>
+  return <PremiumPreviewProvider initialPremium={premium}><div className="min-h-screen bg-[#080d14] text-slate-200">
+    <SiteHeader />
     <main>
-      <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-30" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><div className="mt-12 rounded-2xl border border-white/[0.09] bg-[#0f1721] p-5 shadow-2xl shadow-black/20 sm:p-6"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-lg font-bold text-amber-950">₿</div><div><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Bitcoin market regime</p><p className="mt-1 text-xl font-semibold text-emerald-400">LONG_STRONG</p></div></div><div className="mt-5 flex flex-wrap gap-2"><span className="rounded-md bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400">15m <span className="ml-1 text-emerald-300/60">Bullish</span></span><span className="rounded-md bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400">1h <span className="ml-1 text-emerald-300/60">Bullish</span></span><span className="rounded-md bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400">1d <span className="ml-1 text-emerald-300/60">Bullish</span></span></div></div><div className="flex gap-8 border-t border-white/[0.07] pt-4 text-xs sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0"><div><p className="text-slate-500">Last update</p><p className="mt-1 font-medium text-white">2 min ago</p><p className="mt-1 text-slate-500">Every 5 minutes</p></div><div><p className="text-slate-500">Markets</p><p className="mt-1 font-medium text-white">USDT, USDC & BTC</p><p className="mt-1 text-slate-500">Live coverage</p></div></div></div></div></div></section>
-      <section id="signals" className="mx-auto max-w-6xl px-5 py-14 lg:px-8 lg:py-20"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Specific entry moments</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Top opportunities</h2></div><p className="text-sm text-slate-500">Signals detected in the last 60 minutes</p></div><div className="mt-7 grid gap-5 lg:grid-cols-2"><OpportunityTable title="Top long opportunities" signals={longSignals} direction="long" premium={premium} /><OpportunityTable title="Top short opportunities" signals={shortSignals} direction="short" premium={premium} /></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{longSignals.slice(0, 3).map((signal) => <SignalCard key={signal.symbol} signal={signal} direction="long" premium={premium} />)}</div></section>
+      <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-30" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><BtcRegimeCard btc={btc} /></div></section>
+      <section id="signals" className="mx-auto max-w-6xl px-5 py-14 lg:px-8 lg:py-20"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Specific entry moments</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Top opportunities</h2></div><p className="text-sm text-slate-500">Active signals ranked by reliability</p></div><div className="mt-7 grid gap-5 lg:grid-cols-2"><OpportunityTable title="Top long opportunities" signals={longSignals} direction="long" /><OpportunityTable title="Top short opportunities" signals={shortSignals} direction="short" /></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{longSignals.slice(0, 3).map((signal) => <SignalCard key={signal.id} signal={signal} direction="long" />)}</div></section>
       <section className="border-y border-white/[0.07] bg-[#0b121b]"><div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4 lg:px-8"><div className="flex gap-3"><Clock3 className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">Updated every 5 minutes</h3><p className="mt-2 text-xs leading-5 text-slate-500">Fresh market data and analysis for the pairs that matter.</p></div></div><div className="flex gap-3"><BrainCircuit className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">AI validated analysis</h3><p className="mt-2 text-xs leading-5 text-slate-500">Additional context helps separate signal from noise.</p></div></div><div className="flex gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">Five market regimes</h3><p className="mt-2 text-xs leading-5 text-slate-500">Simple labels make complex conditions easier to scan.</p></div></div><div className="flex gap-3"><Target className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">Specific entry moments</h3><p className="mt-2 text-xs leading-5 text-slate-500">Know when an opportunity first appeared.</p></div></div></div></section>
-      <section className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><div className="rounded-xl border border-white/[0.08] bg-[#121923] p-5"><div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">7 day view</p><h2 className="mt-2 text-xl font-semibold text-white">Most reliable coins</h2></div><Link href="/rankings" className="text-xs text-slate-500 hover:text-white">Full rankings <ArrowRight className="ml-1 inline" size={13} /></Link></div><div className="mt-6 space-y-4">{reliableCoins.map(([symbol, score], index) => <div key={symbol} className="grid grid-cols-[22px_1fr_120px_36px] items-center gap-3 text-sm"><span className="text-slate-600">0{index + 1}</span><span className="text-slate-200">{symbol}</span><div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${score}%` }} /></div><span className="text-right text-emerald-400">{score}%</span></div>)}</div></div><div id="methodology" className="rounded-xl border border-white/[0.08] bg-[#121923] p-5"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Methodology</p><h2 className="mt-2 text-xl font-semibold text-white">Clarity over complexity</h2><p className="mt-4 text-sm leading-6 text-slate-400">Automato analyzes USDT, USDC and BTC markets every five minutes, combining market structure, momentum and AI-assisted validation.</p><div className="mt-5 space-y-3">{['LONG_STRONG', 'LONG_WEAK', 'NEUTRAL', 'SHORT_WEAK', 'SHORT_STRONG'].map((regime, index) => <div key={regime} className="flex items-center justify-between border-b border-white/[0.06] pb-3 text-xs last:border-0 last:pb-0"><span className="text-slate-300">{regime}</span><span className={index < 2 ? 'text-emerald-400' : index === 2 ? 'text-amber-300' : 'text-red-400'}>{index < 2 ? 'Bullish' : index === 2 ? 'Balanced' : 'Bearish'}</span></div>)}</div></div></div></section>
+      <section className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><ReliableCoinsCard coins={reliableCoins} /><div id="methodology" className="rounded-xl border border-white/[0.08] bg-[#121923] p-5"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Methodology</p><h2 className="mt-2 text-xl font-semibold text-white">Clarity over complexity</h2><p className="mt-4 text-sm leading-6 text-slate-400">Automato analyzes USDT, USDC and BTC markets every five minutes, combining market structure, momentum and AI-assisted validation.</p><div className="mt-5 space-y-3">{['LONG_STRONG', 'LONG_WEAK', 'NEUTRAL', 'SHORT_WEAK', 'SHORT_STRONG'].map((regime, index) => <div key={regime} className="flex items-center justify-between border-b border-white/[0.06] pb-3 text-xs last:border-0 last:pb-0"><span className="text-slate-300">{regime}</span><span className={index < 2 ? 'text-emerald-400' : index === 2 ? 'text-amber-300' : 'text-red-400'}>{index < 2 ? 'Bullish' : index === 2 ? 'Balanced' : 'Bearish'}</span></div>)}</div></div></div></section>
       <section className="mx-auto max-w-6xl px-5 pb-16 lg:px-8"><div className="relative overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-7 sm:p-10"><div className="relative max-w-xl"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Built for decisive traders</p><h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Unlock the full picture.</h2><p className="mt-3 text-sm leading-6 text-slate-400">Get entry prices, risk levels, take profits, signal history and API access when you&apos;re ready to go deeper.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-[#07100b] transition hover:bg-emerald-300">View plans <ArrowRight size={15} /></Link><Link href="/api-docs" className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white transition hover:border-white/25">Explore the API <Code2 size={15} /></Link></div></div></div></section>
     </main>
     <footer className="border-t border-white/[0.07]"><div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-8 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8"><Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-300"><BrainCircuit size={16} className="text-emerald-400" /> automato.</Link><div className="flex gap-5"><Link href="/pricing" className="hover:text-white">Pricing</Link><Link href="/api-docs" className="hover:text-white">API</Link><Link href="/login" className="hover:text-white">Log in</Link></div><span>© 2026 Automato. Market intelligence, clearly.</span></div></footer>
-  </div>;
+  </div></PremiumPreviewProvider>;
 }

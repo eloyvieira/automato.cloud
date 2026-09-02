@@ -1,21 +1,14 @@
 import { prisma } from '../lib/prisma';
-import { redis, CACHE_KEYS, CACHE_TTL } from '../lib/redis';
-import { jsonSafe } from '../lib/serializer';
+import { getProfitableCoinRows, getReliableCoinRows } from '../lib/home-data';
 
+/** Markets ranked by average signal reliability over the last 7 days. */
 export async function getMostReliableCoins(limit = 10) {
-  const cached = await redis.get(CACHE_KEYS.rankingReliable).catch(() => null);
-  if (cached) return JSON.parse(cached);
+  return getReliableCoinRows(limit);
+}
 
-  const results = await prisma.signal.groupBy({
-    by: ['symbol'],
-    _avg: { reliability: true },
-    where: { status: 'active' },
-    orderBy: { _avg: { reliability: 'desc' } },
-    take: limit,
-  });
-  const safe = jsonSafe(results);
-  await redis.set(CACHE_KEYS.rankingReliable, JSON.stringify(safe), 'EX', CACHE_TTL).catch(() => {});
-  return safe;
+/** Markets ranked by average realized result of closed signals (last 7 days). */
+export async function getMostProfitableCoins(limit = 10) {
+  return getProfitableCoinRows(limit);
 }
 
 export async function getBestLong(limit = 10) {
