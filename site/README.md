@@ -21,6 +21,17 @@ npx prisma db seed
 npm run dev
 ```
 
+```bash
+production
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run start
+
+schema.prisma
+npx prisma migrate dev --name name_action_to_table
+```
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in:
