@@ -7,8 +7,10 @@ import { jsonSafe } from '@/lib/serializer';
 
 export async function GET(
   _req: Request,
-  { params }: { params: { symbol: string } }
+  // Next.js 16: dynamic route params arrive as a promise.
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,10 +22,10 @@ export async function GET(
   }
 
   const signals = await prisma.signal.findMany({
-    where: { symbol: params.symbol.toUpperCase(), status: 'active' },
+    where: { symbol: symbol.toUpperCase(), status: 'active' },
     orderBy: { detectedAt: 'desc' },
     take: 50,
   });
 
-  return NextResponse.json({ symbol: params.symbol.toUpperCase(), signals: jsonSafe(signals) });
+  return NextResponse.json({ symbol: symbol.toUpperCase(), signals: jsonSafe(signals) });
 }

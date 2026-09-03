@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { RegimeTrendPoint } from '@/lib/home-types';
-import { REGIME_SCORE_MAX, REGIME_SCORE_MIN, regimeByScore, regimeLabel } from '@/lib/format';
+import { REGIME_SCORE_MAX, REGIME_SCORE_MIN, regimeByScore } from '@/lib/format';
 
 const Y_TICKS = [REGIME_SCORE_MAX, 1, 0, -1, REGIME_SCORE_MIN];
 
@@ -122,9 +122,12 @@ export function BtcRegimeTrendChart({ points }: { points: RegimeTrendPoint[] }) 
               <YAxis
                 domain={[REGIME_SCORE_MIN, REGIME_SCORE_MAX]}
                 ticks={Y_TICKS}
-                tickFormatter={(value: number) => regimeLabel(regimeByScore(value))}
+                // O código cabe em uma linha; o texto amigável (REGIME_LABEL,
+                // agora descritivo) quebraria em até 4 linhas e sobreporia os
+                // ticks vizinhos - ele aparece no tooltip.
+                tickFormatter={(value: number) => regimeByScore(value) ?? ''}
                 tick={{ fontSize: 9, fill: '#64748b' }}
-                width={84}
+                width={88}
                 axisLine={false}
                 tickLine={false}
               />

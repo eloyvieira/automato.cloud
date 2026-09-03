@@ -36,6 +36,19 @@ enum PaymentStatus {
   refunded
 }
 
+enum ReferralCommissionStatus {
+  pending
+  available
+  paid
+  canceled
+}
+
+enum MessageStatus {
+  unread
+  read
+  archived
+}
+
 enum QuoteAsset {
   USDT
   USDC
@@ -44,9 +57,9 @@ enum QuoteAsset {
 
 enum Timeframe {
   fifteen_m @map("15m")
-  one_h    @map("1h")
-  four_h   @map("4h")
-  one_d    @map("1d")
+  one_h     @map("1h")
+  four_h    @map("4h")
+  one_d     @map("1d")
 }
 
 enum Regime {
@@ -82,29 +95,40 @@ enum SignalStatus {
 }
 
 model User {
-  id        BigInt   @id @default(autoincrement())
-  name      String?  @db.VarChar(100)
-  email     String   @unique @db.VarChar(190)
-  password  String   @db.VarChar(255)
-  status    UserStatus @default(active)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime? @map("updated_at")
+  id           BigInt     @id @default(autoincrement())
+  name         String?    @db.VarChar(100)
+  email        String     @unique @db.VarChar(190)
+  password     String     @db.VarChar(255)
+  status       UserStatus @default(active)
+  /// 6-character alphanumeric code used in the referral link (?cpa=ABC123).
+  referralCode String?    @unique @map("referral_code") @db.VarChar(6)
+  /// User that referred this account, resolved from the referral code at signup.
+  referredById BigInt?    @map("referred_by_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime?  @map("updated_at")
 
   subscriptions Subscription[]
   payments      Payment[]
 
+  referredBy User?  @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals  User[] @relation("UserReferrals")
+
+  commissionsEarned    ReferralCommission[] @relation("CommissionReferrer")
+  commissionsGenerated ReferralCommission[] @relation("CommissionReferredUser")
+
+  @@index([referredById], map: "idx_referred_by")
   @@map("users")
 }
 
 model Plan {
-  id             Int       @id @default(autoincrement())
-  name           String    @db.VarChar(50)
-  slug           String    @unique @db.VarChar(50)
+  id             Int           @id @default(autoincrement())
+  name           String        @db.VarChar(50)
+  slug           String        @unique @db.VarChar(50)
   type           PlanType
-  price          Decimal   @db.Decimal(10, 2)
+  price          Decimal       @db.Decimal(10, 2)
   billingPeriod  BillingPeriod @default(weekly) @map("billing_period")
-  apiRequestsDay Int?      @map("api_requests_day") @db.UnsignedInt
-  isActive       Boolean   @default(true) @map("is_active") @db.TinyInt
+  apiRequestsDay Int?          @map("api_requests_day") @db.UnsignedInt
+  isActive       Boolean       @default(true) @map("is_active") @db.TinyInt
 
   subscriptions Subscription[]
 
@@ -112,21 +136,21 @@ model Plan {
 }
 
 model Subscription {
-  id                   BigInt             @id @default(autoincrement())
-  userId               BigInt             @map("user_id")
-  planId               Int                @map("plan_id")
-  provider             String             @db.VarChar(30)
-  providerCustomerId   String?            @map("provider_customer_id") @db.VarChar(100)
-  providerSubscriptionId String?          @unique @map("provider_subscription_id") @db.VarChar(100)
-  status               SubscriptionStatus
-  startsAt             DateTime           @map("starts_at")
-  expiresAt            DateTime?          @map("expires_at")
-  nextPaymentAt        DateTime?          @map("next_payment_at")
-  canceledAt           DateTime?          @map("canceled_at")
-  createdAt            DateTime           @default(now()) @map("created_at")
+  id                     BigInt             @id @default(autoincrement())
+  userId                 BigInt             @map("user_id")
+  planId                 Int                @map("plan_id")
+  provider               String             @db.VarChar(30)
+  providerCustomerId     String?            @map("provider_customer_id") @db.VarChar(100)
+  providerSubscriptionId String?            @unique @map("provider_subscription_id") @db.VarChar(100)
+  status                 SubscriptionStatus
+  startsAt               DateTime           @map("starts_at")
+  expiresAt              DateTime?          @map("expires_at")
+  nextPaymentAt          DateTime?          @map("next_payment_at")
+  canceledAt             DateTime?          @map("canceled_at")
+  createdAt              DateTime           @default(now()) @map("created_at")
 
-  user    User          @relation(fields: [userId], references: [id])
-  plan    Plan          @relation(fields: [planId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  plan     Plan      @relation(fields: [planId], references: [id])
   payments Payment[]
 
   @@index([userId, status], map: "idx_user_status")
@@ -134,61 +158,101 @@ model Subscription {
 }
 
 model Payment {
-  id               BigInt       @id @default(autoincrement())
-  userId           BigInt       @map("user_id")
-  subscriptionId   BigInt?      @map("subscription_id")
-  providerPaymentId String?    @unique @map("provider_payment_id") @db.VarChar(120)
-  amount           Decimal      @db.Decimal(10, 2)
-  currency         String       @default("USD") @db.Char(3)
-  status           PaymentStatus
-  paidAt           DateTime?    @map("paid_at")
-  createdAt        DateTime     @default(now()) @map("created_at")
+  id                BigInt        @id @default(autoincrement())
+  userId            BigInt        @map("user_id")
+  subscriptionId    BigInt?       @map("subscription_id")
+  providerPaymentId String?       @unique @map("provider_payment_id") @db.VarChar(120)
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("USD") @db.Char(3)
+  status            PaymentStatus
+  paidAt            DateTime?     @map("paid_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
 
-  user         User          @relation(fields: [userId], references: [id])
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
+  subscription       Subscription?       @relation(fields: [subscriptionId], references: [id])
+  referralCommission ReferralCommission?
 
   @@index([userId, createdAt], map: "idx_user_created")
   @@map("payments")
 }
 
 model MarketRegime {
-  id          BigInt   @id @default(autoincrement())
-  symbol      String   @db.VarChar(20)
-  quoteAsset  QuoteAsset @map("quote_asset")
-  timeframe   Timeframe
-  regime      Regime
-  strength    Decimal? @db.Decimal(5, 2)
-  aiConfidence Decimal? @map("ai_confidence") @db.Decimal(5, 2)
-  data        Json?
-  analyzedAt  DateTime @map("analyzed_at")
-  
+  id           BigInt     @id @default(autoincrement())
+  symbol       String     @db.VarChar(20)
+  quoteAsset   QuoteAsset @map("quote_asset")
+  timeframe    Timeframe
+  regime       Regime
+  strength     Decimal?   @db.Decimal(5, 2)
+  aiConfidence Decimal?   @map("ai_confidence") @db.Decimal(5, 2)
+  data         Json?
+  analyzedAt   DateTime   @map("analyzed_at")
+
   @@index([symbol, quoteAsset, timeframe, analyzedAt], map: "idx_market_regime_history")
   @@index([regime, timeframe], map: "idx_regime")
   @@map("market_regimes")
 }
 
 model Signal {
-  id           BigInt        @id @default(autoincrement())
-  symbol       String        @db.VarChar(20)
-  quoteAsset   QuoteAsset    @map("quote_asset")
-  strategy     Strategy
-  timeframe    Timeframe
-  direction    SignalDirection
-  regime       SignalRegime
-  reliability  Decimal?      @db.Decimal(5, 2)
-  entryPrice   Decimal?      @map("entry_price") @db.Decimal(24, 12)
-  stopLoss     Decimal?      @map("stop_loss") @db.Decimal(24, 12)
-  takeProfit1  Decimal?      @map("take_profit1") @db.Decimal(24, 12)
-  takeProfit2  Decimal?      @map("take_profit2") @db.Decimal(24, 12)
-  resultPerc   Decimal?      @map("result_perc") @db.Decimal(8, 4)
-  status       SignalStatus  @default(active)
-  detectedAt   DateTime      @map("detected_at")
-  expiresAt    DateTime?     @map("expires_at")
-  closedAt     DateTime?     @map("closed_at")
-  data         Json?
+  id          BigInt          @id @default(autoincrement())
+  symbol      String          @db.VarChar(20)
+  quoteAsset  QuoteAsset      @map("quote_asset")
+  strategy    Strategy
+  timeframe   Timeframe
+  direction   SignalDirection
+  regime      SignalRegime
+  reliability Decimal?        @db.Decimal(5, 2)
+  entryPrice  Decimal?        @map("entry_price") @db.Decimal(24, 12)
+  stopLoss    Decimal?        @map("stop_loss") @db.Decimal(24, 12)
+  takeProfit1 Decimal?        @map("take_profit1") @db.Decimal(24, 12)
+  takeProfit2 Decimal?        @map("take_profit2") @db.Decimal(24, 12)
+  resultPerc  Decimal?        @map("result_perc") @db.Decimal(8, 4)
+  status      SignalStatus    @default(active)
+  detectedAt  DateTime        @map("detected_at")
+  expiresAt   DateTime?       @map("expires_at")
+  closedAt    DateTime?       @map("closed_at")
+  data        Json?
 
   @@index([status, strategy, timeframe, detectedAt], map: "idx_active")
   @@index([symbol, quoteAsset, detectedAt], map: "idx_symbol")
   @@index([status, reliability], map: "idx_rank")
   @@map("signals")
+}
+
+/// One commission credited to a referrer for a Premium payment made by a
+/// referred user. `payment_id` is unique, so the same payment can never be
+/// commissioned twice.
+model ReferralCommission {
+  id             BigInt                   @id @default(autoincrement())
+  referrerId     BigInt                   @map("referrer_id")
+  referredUserId BigInt                   @map("referred_user_id")
+  paymentId      BigInt                   @unique @map("payment_id")
+  /// Commission amount in `currency` (payment amount * rate).
+  amount         Decimal                  @db.Decimal(18, 8)
+  currency       String                   @default("USDT") @db.VarChar(10)
+  /// Rate applied when the commission was granted (0.1000 = 10%).
+  rate           Decimal                  @default(0.1000) @db.Decimal(5, 4)
+  status         ReferralCommissionStatus @default(available)
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  referrer     User    @relation("CommissionReferrer", fields: [referrerId], references: [id])
+  referredUser User    @relation("CommissionReferredUser", fields: [referredUserId], references: [id])
+  payment      Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([referrerId, status], map: "idx_referrer_status")
+  @@index([referredUserId], map: "idx_referred_user")
+  @@map("referral_commissions")
+}
+
+/// Messages submitted through the /contact form.
+model Message {
+  id        BigInt        @id @default(autoincrement())
+  name      String        @db.VarChar(100)
+  email     String        @db.VarChar(190)
+  subject   String        @db.VarChar(150)
+  message   String        @db.Text
+  status    MessageStatus @default(unread)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([status, createdAt], map: "idx_status_created")
+  @@map("messages")
 }

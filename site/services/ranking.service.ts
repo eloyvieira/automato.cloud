@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
-import { getProfitableCoinRows, getReliableCoinRows } from '../lib/home-data';
+import { getProfitableCoinRows, getRanking, getReliableCoinRows } from '../lib/home-data';
+import type { RankingKind } from '../lib/home-types';
 
 /** Markets ranked by average signal reliability over the last 7 days. */
 export async function getMostReliableCoins(limit = 10) {
@@ -25,4 +26,9 @@ export async function getBestShort(limit = 10) {
     orderBy: { reliability: 'desc' },
     take: limit,
   });
+}
+
+/** One board of the /rankings page, built from real signal rows. */
+export async function getRankingBoard(kind: RankingKind, limit = 20) {
+  return getRanking(kind, limit);
 }

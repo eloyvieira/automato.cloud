@@ -7,7 +7,8 @@ import { OpportunityTable } from '@/components/home/OpportunityTable';
 import { PremiumPreviewProvider } from '@/components/home/PremiumPreview';
 import { ReliableCoinsCard } from '@/components/home/ReliableCoinsCard';
 import { SignalCard } from '@/components/home/SignalCard';
-import { SiteHeader } from '@/components/home/SiteHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 import { getSession } from '@/lib/auth';
 import { getHomeData } from '@/lib/home-data';
 import { hasPremiumAccess } from '@/lib/permissions';
@@ -114,7 +115,7 @@ export default async function Home() {
   const premium = session ? await hasPremiumAccess(session.userId) : false;
 
   return <PremiumPreviewProvider initialPremium={premium}><div className="min-h-screen bg-[#080d14] text-slate-200">
-    <SiteHeader />
+    <SiteHeader showPreviewToggle />
     <main>
       <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-40" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)] lg:items-center lg:gap-10"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><BtcRegimeTrendChart points={btcTrend} /></div><BtcRegimeCard btc={btc} /></div></section>
       
@@ -142,9 +143,9 @@ export default async function Home() {
 </section>
       
       <section className="border-y border-white/[0.07] bg-[#0b121b]"><div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4 lg:px-8"><div className="flex gap-3"><Clock3 className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">Real-Time Crypto Updates</h3><p className="mt-2 text-xs leading-5 text-slate-500">Crypto trading signals and market analysis updated every 5 minutes across USDT, USDC and BTC pairs.</p></div></div><div className="flex gap-3"><BrainCircuit className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">AI-Assisted Crypto Analysis</h3><p className="mt-2 text-xs leading-5 text-slate-500">AI-assisted validation combines market data and quantitative analysis to help identify stronger crypto trading opportunities.      </p></div></div><div className="flex gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white"> Five Crypto Market Regimes</h3><p className="mt-2 text-xs leading-5 text-slate-500">Track Strong Bullish, Bullish, Neutral, Bearish and Strong Bearish market conditions.</p></div></div><div className="flex gap-3"><Target className="mt-0.5 shrink-0 text-emerald-400" size={18} /><div><h3 className="text-sm font-medium text-white">Real-Time Crypto Entry Signals</h3><p className="mt-2 text-xs leading-5 text-slate-500">Track when long and short crypto trading opportunities are detected, including signal timing and market conditions.</p></div></div></div></section>
-      <section className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><ReliableCoinsCard coins={reliableCoins} /><MethodologyCard /></div></section>
+      <section id="methodology" className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><ReliableCoinsCard coins={reliableCoins} /><MethodologyCard /></div></section>
       <section className="mx-auto max-w-6xl px-5 pb-16 lg:px-8"><div className="relative overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-7 sm:p-10"><div className="relative max-w-xl"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Built for decisive traders</p><h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Unlock the full picture.</h2><p className="mt-3 text-sm leading-6 text-slate-400">Get entry prices, risk levels, take profits, signal history and API access when you&apos;re ready to go deeper.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-[#07100b] transition hover:bg-emerald-300">View plans <ArrowRight size={15} /></Link><Link href="/api-docs" className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white transition hover:border-white/25">Explore the API <Code2 size={15} /></Link></div></div></div></section>
     </main>
-    <footer className="border-t border-white/[0.07]"><div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-8 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8"><Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-300"><BrainCircuit size={16} className="text-emerald-400" /> automato.</Link><div className="flex gap-5"><Link href="/pricing" className="hover:text-white">Pricing</Link><Link href="/api-docs" className="hover:text-white">API</Link><Link href="/login" className="hover:text-white">Log in</Link></div><span>© 2026 Automato. Market intelligence, clearly.</span></div></footer>
+    <SiteFooter />
   </div></PremiumPreviewProvider>;
 }

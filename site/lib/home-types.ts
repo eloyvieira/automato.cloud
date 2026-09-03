@@ -59,6 +59,28 @@ export type CoinRank = {
   score: number;
 };
 
+/** The seven boards available on /rankings. */
+export type RankingKind =
+  | 'most-reliable'
+  | 'most-profitable'
+  | 'best-long'
+  | 'best-short'
+  | 'best-scalping'
+  | 'best-day'
+  | 'best-swing';
+
+/** One row of the /rankings table, already formatted for display. */
+export type RankingEntry = {
+  id: string;
+  symbol: string;
+  regime: string;
+  reliability: number;
+  strategy: string;
+  timeframe: string;
+  /** Realized result of a closed signal ("+4.20%"), null while it is open. */
+  result: string | null;
+};
+
 export type HomeData = {
   btc: BtcRegimeView;
   btcTrend: RegimeTrendPoint[];

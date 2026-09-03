@@ -43,6 +43,7 @@ export const CACHE_KEYS = {
     `ranking:reliable:${windowDays}d:${limit}`,
   rankingProfitable: (windowDays: number, limit: number) =>
     `ranking:profitable:${windowDays}d:${limit}`,
+  rankingBoard: (kind: string, limit: number) => `ranking:board:${kind}:${limit}`,
 } as const;
 
 /** Market data is recalculated roughly every 5 minutes. */

@@ -1,7 +1,13 @@
-'use client';
-
 import Link from 'next/link';
-import { BrainCircuit, Check, ArrowRight } from 'lucide-react';
+import type { Metadata } from 'next';
+import { Check, ArrowRight } from 'lucide-react';
+import { SiteFooter } from '@/components/layout/SiteFooter';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+
+export const metadata: Metadata = {
+  title: 'Pricing | Automato',
+  description: 'Free, Premium and API plans for real-time crypto signals and market analysis.',
+};
 
 const plans = [
   { name: 'Free', price: '$0', period: 'forever', features: ['Public signals', 'BTC market regime', 'Top opportunities', 'Rankings'], cta: 'Current plan', highlight: false },
@@ -12,16 +18,8 @@ const plans = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#080d14]">
-      <header className="border-b border-white/[0.07]">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-400"><BrainCircuit size={20} /></span>
-            <span className="text-lg font-semibold text-white">automato<span className="text-emerald-400">.</span></span>
-          </Link>
-          <Link href="/login" className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white transition hover:border-emerald-400/40">Log in</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#080d14] text-slate-200">
+      <SiteHeader />
       <main className="mx-auto max-w-6xl px-5 py-16 lg:px-8">
         <div className="text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Simple, transparent pricing</h1>
@@ -43,6 +41,8 @@ export default function PricingPage() {
           ))}
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

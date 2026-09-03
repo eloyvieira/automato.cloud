@@ -13,6 +13,8 @@ import type {
   BtcRegimeView,
   CoinRank,
   HomeData,
+  RankingEntry,
+  RankingKind,
   RegimeCode,
   RegimeTrendPoint,
   Signal,
@@ -348,6 +350,121 @@ function toSignalView(row: SignalRow, now: number): Signal {
 
 function toCoinRank(row: CoinRankRow): CoinRank {
   return { symbol: pair(row.symbol, row.quoteAsset), score: Math.round(row.score) };
+}
+
+/* ------------------------------------------------------------------ *
+ * Rankings page (/rankings)
+ * ------------------------------------------------------------------ */
+
+type RankingRow = SignalRow & { resultPerc: number | null };
+
+/**
+ * Prisma filter/order for each board. Every board reads real `signals` rows:
+ * the profitability board looks at closed signals (`result_perc`), the others
+ * at currently active ones.
+ */
+const RANKING_QUERY: Record<
+  RankingKind,
+  { where: Record<string, unknown>; orderBy: Record<string, 'asc' | 'desc'>[] }
+> = {
+  'most-reliable': {
+    where: { status: 'active', reliability: { not: null } },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+  'most-profitable': {
+    where: { status: 'closed', resultPerc: { not: null } },
+    orderBy: [{ resultPerc: 'desc' }, { closedAt: 'desc' }],
+  },
+  'best-long': {
+    where: { status: 'active', direction: 'LONG' },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+  'best-short': {
+    where: { status: 'active', direction: 'SHORT' },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+  'best-scalping': {
+    where: { status: 'active', strategy: 'scalping' },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+  'best-day': {
+    where: { status: 'active', strategy: 'day' },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+  'best-swing': {
+    where: { status: 'active', strategy: 'swing' },
+    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  },
+};
+
+/** Raw rows of one ranking board, cached in Redis like every other read. */
+export function getRankingRows(kind: RankingKind, limit = 20): Promise<RankingRow[]> {
+  const query = RANKING_QUERY[kind];
+
+  return getCached<RankingRow[]>(
+    CACHE_KEYS.rankingBoard(kind, limit),
+    async () => {
+      const signals = await prisma.signal.findMany({
+        where: query.where,
+        orderBy: query.orderBy,
+        take: limit,
+        select: {
+          id: true,
+          symbol: true,
+          quoteAsset: true,
+          direction: true,
+          regime: true,
+          reliability: true,
+          strategy: true,
+          timeframe: true,
+          entryPrice: true,
+          stopLoss: true,
+          takeProfit1: true,
+          takeProfit2: true,
+          resultPerc: true,
+          detectedAt: true,
+        },
+      });
+
+      return signals.map((signal) => ({
+        id: signal.id.toString(),
+        symbol: signal.symbol,
+        quoteAsset: signal.quoteAsset,
+        direction: signal.direction,
+        regime: signal.regime,
+        reliability: toNumber(signal.reliability),
+        strategy: signal.strategy as PrismaStrategy,
+        timeframe: signal.timeframe as PrismaTimeframe,
+        entryPrice: toNumber(signal.entryPrice),
+        stopLoss: toNumber(signal.stopLoss),
+        takeProfit1: toNumber(signal.takeProfit1),
+        takeProfit2: toNumber(signal.takeProfit2),
+        resultPerc: toNumber(signal.resultPerc),
+        detectedAt: signal.detectedAt.toISOString(),
+      }));
+    },
+    CACHE_TTL,
+  );
+}
+
+function toRankingEntry(row: RankingRow): RankingEntry {
+  return {
+    id: row.id,
+    symbol: pair(row.symbol, row.quoteAsset),
+    regime: row.regime,
+    reliability: Math.round(row.reliability ?? 0),
+    strategy: STRATEGY_LABEL[row.strategy] ?? row.strategy,
+    timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
+    result:
+      row.resultPerc === null
+        ? null
+        : `${row.resultPerc > 0 ? '+' : ''}${row.resultPerc.toFixed(2)}%`,
+  };
+}
+
+/** One ranking board, ready to render. */
+export async function getRanking(kind: RankingKind, limit = 20): Promise<RankingEntry[]> {
+  return (await getRankingRows(kind, limit)).map(toRankingEntry);
 }
 
 /* ------------------------------------------------------------------ *
