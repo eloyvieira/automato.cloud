@@ -42,7 +42,7 @@ export default function PricingPage() {
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter showPreviewToggle />
     </div>
   );
 }

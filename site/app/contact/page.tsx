@@ -50,7 +50,7 @@ export default function ContactPage() {
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter showPreviewToggle />
     </div>
   );
 }

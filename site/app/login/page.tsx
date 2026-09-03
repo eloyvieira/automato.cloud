@@ -36,9 +36,14 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#080d14] px-5">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-400"><BrainCircuit size={20} /></span>
-          <span className="text-lg font-semibold text-white">automato<span className="text-emerald-400">.</span></span>
+        <Link href="/" className="mb-8 flex items-center justify-center gap-0.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg">
+            <img src="/images/icone.svg" alt="Automato" className="h-6 w-6" />
+          </span>
+
+          <span className="text-lg font-semibold text-white">
+            automato<span className="text-[#5bd6e8]">.</span>
+          </span>
         </Link>
         <div className="rounded-xl border border-white/[0.08] bg-[#121923] p-6">
           <h1 className="text-xl font-semibold text-white">Welcome back</h1>

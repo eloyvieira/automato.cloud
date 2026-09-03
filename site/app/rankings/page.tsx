@@ -127,7 +127,7 @@ export default async function RankingsPage({
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter showPreviewToggle />
     </div>
   );
 }

@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { RegimeTrendPoint } from '@/lib/home-types';
-import { REGIME_SCORE_MAX, REGIME_SCORE_MIN, regimeByScore } from '@/lib/format';
+import { REGIME_SCORE_MAX, REGIME_SCORE_MIN, regimeByScore, regimeLabel } from '@/lib/format';
 
 const Y_TICKS = [REGIME_SCORE_MAX, 1, 0, -1, REGIME_SCORE_MIN];
 
@@ -58,6 +58,51 @@ function CustomizedAxisTick({
         {payload.value}
       </text>
     </g>
+  );
+}
+
+/** Tick do eixo Y com o texto de REGIME_LABEL, quebrando em linhas curtas. */
+function RegimeAxisTick({
+  x,
+  y,
+  payload,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value: number };
+}) {
+  if (x === undefined || y === undefined || !payload) return null;
+
+  const code = regimeByScore(payload.value);
+  const label = code ? regimeLabel(code) : '';
+  if (!label) return null;
+
+  const words = label.split(' ');
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > 14 && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+
+  const lineHeight = 11;
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+
+  return (
+    <text x={x} y={startY} textAnchor="end" fontSize={9} fill="#64748b">
+      {lines.map((line, index) => (
+        <tspan key={line} x={x} dy={index === 0 ? 0 : lineHeight}>
+          {line}
+        </tspan>
+      ))}
+    </text>
   );
 }
 
@@ -122,12 +167,8 @@ export function BtcRegimeTrendChart({ points }: { points: RegimeTrendPoint[] }) 
               <YAxis
                 domain={[REGIME_SCORE_MIN, REGIME_SCORE_MAX]}
                 ticks={Y_TICKS}
-                // O código cabe em uma linha; o texto amigável (REGIME_LABEL,
-                // agora descritivo) quebraria em até 4 linhas e sobreporia os
-                // ticks vizinhos - ele aparece no tooltip.
-                tickFormatter={(value: number) => regimeByScore(value) ?? ''}
-                tick={{ fontSize: 9, fill: '#64748b' }}
-                width={88}
+                tick={<RegimeAxisTick />}
+                width={108}
                 axisLine={false}
                 tickLine={false}
               />

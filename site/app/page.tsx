@@ -115,7 +115,7 @@ export default async function Home() {
   const premium = session ? await hasPremiumAccess(session.userId) : false;
 
   return <PremiumPreviewProvider initialPremium={premium}><div className="min-h-screen bg-[#080d14] text-slate-200">
-    <SiteHeader showPreviewToggle />
+    <SiteHeader />
     <main>
       <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-40" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)] lg:items-center lg:gap-10"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><BtcRegimeTrendChart points={btcTrend} /></div><BtcRegimeCard btc={btc} /></div></section>
       
@@ -146,6 +146,6 @@ export default async function Home() {
       <section id="methodology" className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><ReliableCoinsCard coins={reliableCoins} /><MethodologyCard /></div></section>
       <section className="mx-auto max-w-6xl px-5 pb-16 lg:px-8"><div className="relative overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-7 sm:p-10"><div className="relative max-w-xl"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Built for decisive traders</p><h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Unlock the full picture.</h2><p className="mt-3 text-sm leading-6 text-slate-400">Get entry prices, risk levels, take profits, signal history and API access when you&apos;re ready to go deeper.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-[#07100b] transition hover:bg-emerald-300">View plans <ArrowRight size={15} /></Link><Link href="/api-docs" className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white transition hover:border-white/25">Explore the API <Code2 size={15} /></Link></div></div></div></section>
     </main>
-    <SiteFooter />
+    <SiteFooter showPreviewToggle />
   </div></PremiumPreviewProvider>;
 }

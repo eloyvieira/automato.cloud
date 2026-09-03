@@ -6,8 +6,8 @@ import { SiteHeaderNav } from './SiteHeaderNav';
  * logged-in / logged-out menu accordingly. Used by every public page, so the
  * menu markup exists in exactly one place.
  */
-export async function SiteHeader({ showPreviewToggle = false }: { showPreviewToggle?: boolean }) {
+export async function SiteHeader() {
   const session = await getSession();
 
-  return <SiteHeaderNav authenticated={session !== null} showPreviewToggle={showPreviewToggle} />;
+  return <SiteHeaderNav authenticated={session !== null} />;
 }
