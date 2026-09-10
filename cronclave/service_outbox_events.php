@@ -1,0 +1,255 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors','On');
+ini_set('trader.real_precision','8');
+set_time_limit(0);
+require '/aute/global/ccxt/ccxt.php';
+require '/aute/global/eksternal/functions.php.php';
+require '/aute/global/eksternal/konf6jon_trading_binance_v202.php';
+require '/aute/global/eksternal/database.class.php';
+require '/aute/global/eksternal/indicators.php';
+require '/aute/global/eksternal/futures_common.php';
+
+$ip = ipinfo();
+
+function calcularStrengthConfidence($data)
+{
+    $strength = 0;
+    $confidence = 0;
+
+    $regime = $data['regime'] ?? 'NEUTRAL';
+
+    $isLong = in_array($regime, ['LONG_STRONG', 'LONG_WEAK'], true);
+    $isShort = in_array($regime, ['SHORT_STRONG', 'SHORT_WEAK'], true);
+
+    // =====================================================
+    // STRENGTH
+    // Mede a força interna do timeframe atual (15m)
+    // =====================================================
+
+    if ($isLong) {
+        if (!empty($data['ema_bull'])) {
+            $strength += 15;
+        }
+
+        if (!empty($data['ema9_rising'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['ema26_rising'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['macd_rising'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['hist_rising'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['macd_bull_zone'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['bull_momentum'])) {
+            $strength += 15;
+        }
+
+        if (!empty($data['bull_structure'])) {
+            $strength += 20;
+        }
+    }
+
+    if ($isShort) {
+        if (!empty($data['ema_bear'])) {
+            $strength += 15;
+        }
+
+        if (!empty($data['ema9_falling'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['ema26_falling'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['macd_falling'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['hist_falling'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['macd_bear_zone'])) {
+            $strength += 10;
+        }
+
+        if (!empty($data['bear_momentum'])) {
+            $strength += 15;
+        }
+
+        if (!empty($data['bear_structure'])) {
+            $strength += 20;
+        }
+    }
+
+    $strength = min(100, $strength);
+
+    // =====================================================
+    // CONFIDENCE
+    // Mede concordância entre 15m, 1h e 1d
+    // =====================================================
+
+    $regime15m = $data['regime_15m'] ?? 'NEUTRAL';
+    $regime1h  = $data['regime_1h'] ?? 'NEUTRAL';
+    $regime1d  = $data['regime_1d'] ?? 'NEUTRAL';
+
+    if ($isLong) {
+        if ($regime15m === 'LONG_STRONG') {
+            $confidence += 40;
+        } elseif ($regime15m === 'LONG_WEAK') {
+            $confidence += 30;
+        }
+
+        if ($regime1h === 'LONG_STRONG') {
+            $confidence += 35;
+        } elseif ($regime1h === 'LONG_WEAK') {
+            $confidence += 25;
+        }
+
+        if ($regime1d === 'LONG_STRONG') {
+            $confidence += 25;
+        } elseif ($regime1d === 'LONG_WEAK') {
+            $confidence += 15;
+        }
+    }
+
+    if ($isShort) {
+        if ($regime15m === 'SHORT_STRONG') {
+            $confidence += 40;
+        } elseif ($regime15m === 'SHORT_WEAK') {
+            $confidence += 30;
+        }
+
+        if ($regime1h === 'SHORT_STRONG') {
+            $confidence += 35;
+        } elseif ($regime1h === 'SHORT_WEAK') {
+            $confidence += 25;
+        }
+
+        if ($regime1d === 'SHORT_STRONG') {
+            $confidence += 25;
+        } elseif ($regime1d === 'SHORT_WEAK') {
+            $confidence += 15;
+        }
+    }
+
+    $confidence = min(100, $confidence);
+
+    // =====================================================
+    // LABELS
+    // =====================================================
+
+    if ($strength >= 85) {
+        $strengthLabel = 'VERY_STRONG';
+    } elseif ($strength >= 70) {
+        $strengthLabel = 'STRONG';
+    } elseif ($strength >= 50) {
+        $strengthLabel = 'MODERATE';
+    } elseif ($strength >= 30) {
+        $strengthLabel = 'WEAK';
+    } else {
+        $strengthLabel = 'VERY_WEAK';
+    }
+
+    if ($confidence >= 85) {
+        $confidenceLabel = 'VERY_HIGH';
+    } elseif ($confidence >= 70) {
+        $confidenceLabel = 'HIGH';
+    } elseif ($confidence >= 50) {
+        $confidenceLabel = 'MEDIUM';
+    } elseif ($confidence >= 30) {
+        $confidenceLabel = 'LOW';
+    } else {
+        $confidenceLabel = 'VERY_LOW';
+    }
+
+    return [
+        'strength' => $strength,
+        'strength_label' => $strengthLabel,
+        'confidence' => $confidence,
+        'confidence_label' => $confidenceLabel
+    ];
+}
+
+while (true) {
+
+    while (true) {
+
+        $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 50", null);
+        if (!$events) {
+            usleep(500000); // 0.5s
+            continue;
+        }
+
+        foreach ($events as $event) {
+
+            $payload = $event['payload'];
+            $tipo = strtolower($event['tipo']);
+
+            switch ($tipo) {
+                case 'regime_btc':
+                    $bind = [
+                        ':id' => $event['id'],
+                        ':status' => 1
+                    ];
+                    $db->update("outbox_events", "WHERE id=:id", $bind);
+
+                    $data = json_decode($payload, true);
+                    $data_func = calcularStrengthConfidence($data);
+                    $bind = [
+                        ':symbol' => 'BTC',
+                        ':quote_asset' => 'USDT',
+                        ':timeframe' => '15m',
+                        ':regime' => $data['regime_15m'],
+                        ':strength' => $data_func['strength'],
+                        ':ai_confidence' => $data_func['confidence'],
+                        ':analyzed_at' => $event['data_cadastro']
+                    ];
+                    $db->insert("market_regimes", $bind);
+                    $bind = [
+                        ':symbol' => 'BTC',
+                        ':quote_asset' => 'USDT',
+                        ':timeframe' => '1h',
+                        ':regime' => $data['regime_1h'],
+                        ':strength' => $data_func['strength'],
+                        ':ai_confidence' => $data_func['confidence'],
+                        ':analyzed_at' => $event['data_cadastro']
+                    ];
+                    $db->insert("market_regimes", $bind);
+                    $bind = [
+                        ':symbol' => 'BTC',
+                        ':quote_asset' => 'USDT',
+                        ':timeframe' => '1d',
+                        ':regime' => $data['regime_1d'],
+                        ':strength' => $data_func['strength'],
+                        ':ai_confidence' => $data_func['confidence'],
+                        ':analyzed_at' => $event['data_cadastro']
+                    ];
+                    $db->insert("market_regimes", $bind);
+
+                break;
+
+                default:
+                    $bind = [
+                        ':id' => $event['id'],
+                        ':status' => 3
+                    ];
+                    $db->update("outbox_events", "WHERE id=:id", $bind);
+                break;
+            }
+        }
+    }
+}

@@ -19,6 +19,9 @@ npx prisma generate
 npx prisma migrate dev
 npx prisma db seed
 npm run dev
+
+schema.prisma
+npx prisma migrate dev --name name_action_to_table
 ```
 
 ```bash
@@ -28,8 +31,31 @@ npx prisma generate
 npx prisma migrate deploy
 npm run start
 
-schema.prisma
-npx prisma migrate dev --name name_action_to_table
+primeira build:
+git clone <seu-repositorio>
+cd automato.cloud
+npm ci
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+pm2 start npm --name automato -- start
+
+próximas atualizações:
+cd /var/www/automato.cloud
+git pull
+npm ci
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+  pm2 stop automato
+  rm -rf .next
+  npx prisma generate
+  npm run build
+  pm2 start automato
+  pm2 save
+pm2 restart automato
+pm2 restart automato --update-env
+pm2 logs automato --lines 100
 ```
 
 ## Environment
