@@ -11,7 +11,7 @@ webhook () {
         exit
     else
         echo "Script de aute service_outbox_events não está rodando"
-        /usr/bin/php /aute/robot/trading/binance/bot-trading-2.0.2__dev/service_outbox_events.php >/dev/null 2>&1
+        /usr/bin/php /opt/infra/automato.cloud/cronclave/service_outbox_events.php >/dev/null 2>&1
         exit
     fi
 }
