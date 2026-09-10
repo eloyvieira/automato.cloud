@@ -184,6 +184,9 @@ function calcularStrengthConfidence($data)
     ];
 }
 
+
+$dba = new Database('automato');
+
 while (true) {
 
     while (true) {
@@ -218,7 +221,7 @@ while (true) {
                         ':ai_confidence' => $data_func['confidence'],
                         ':analyzed_at' => $event['data_cadastro']
                     ];
-                    $db->insert("market_regimes", $bind);
+                    $dba->insert("market_regimes", $bind);
                     $bind = [
                         ':symbol' => 'BTC',
                         ':quote_asset' => 'USDT',
@@ -228,7 +231,7 @@ while (true) {
                         ':ai_confidence' => $data_func['confidence'],
                         ':analyzed_at' => $event['data_cadastro']
                     ];
-                    $db->insert("market_regimes", $bind);
+                    $dba->insert("market_regimes", $bind);
                     $bind = [
                         ':symbol' => 'BTC',
                         ':quote_asset' => 'USDT',
@@ -238,7 +241,7 @@ while (true) {
                         ':ai_confidence' => $data_func['confidence'],
                         ':analyzed_at' => $event['data_cadastro']
                     ];
-                    $db->insert("market_regimes", $bind);
+                    $dba->insert("market_regimes", $bind);
 
                 break;
 
