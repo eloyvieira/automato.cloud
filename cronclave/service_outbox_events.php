@@ -261,6 +261,30 @@ while (true) {
                     $db->update("outbox_events", "WHERE id=:id", $bind);
 
                 break;
+                
+                case 'signals':
+
+                    $data = json_decode($payload, true);
+                    if (!$data) {
+                        $db->update(
+                            "outbox_events",
+                            "WHERE id=:id",
+                            [
+                                ':id' => $event['id'],
+                                ':status' => 3
+                            ]
+                        );
+                        break;
+                    }
+                    $dba->insert("signals", $data);
+
+                    $bind = [
+                        ':id' => $event['id'],
+                        ':status' => 1
+                    ];
+                    $db->update("outbox_events", "WHERE id=:id", $bind);
+
+                break;
 
                 default:
                     $bind = [
