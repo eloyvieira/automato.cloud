@@ -46,7 +46,10 @@ git pull
 npm ci
 npx prisma generate
 npx prisma migrate deploy
+rm -rf .next
 npm run build
+pm2 restart automato --update-env
+pm2 start npm --name automato -- start
   pm2 stop automato
   rm -rf .next
   npx prisma generate
@@ -54,7 +57,6 @@ npm run build
   pm2 start automato
   pm2 save
 pm2 restart automato
-pm2 restart automato --update-env
 pm2 logs automato --lines 100
 ```
 
