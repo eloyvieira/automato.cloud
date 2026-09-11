@@ -29,7 +29,7 @@ const BTC_QUOTE_ASSET = 'USDT';
  * so the headline regime shown in the hero is the 1h row (falling back to the
  * most recently analyzed timeframe when 1h is missing).
  */
-const HEADLINE_TIMEFRAME: TimeframeLabel = '1h';
+const HEADLINE_TIMEFRAME: TimeframeLabel = '15m';
 
 /** Window used by the "7 day view" rankings. */
 const RANKING_WINDOW_DAYS = 7;
