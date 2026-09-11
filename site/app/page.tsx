@@ -16,6 +16,7 @@ import { hasPremiumAccess } from '@/lib/permissions';
 // Market data is cached in Redis for 5 minutes, so the page itself renders per
 // request (it also reads the session cookie).
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function NeuralNetworkIcon() {
   return (
