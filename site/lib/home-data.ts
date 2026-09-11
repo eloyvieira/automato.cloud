@@ -325,7 +325,9 @@ function toBtcRegimeView(rows: MarketRegimeRow[], now: number): BtcRegimeView {
 
   for (const row of rows) {
     const label = normalizeTimeframe(row.timeframe);
-    if (label) timeframes[label] = row.regime;
+    if (label && timeframes[label] === undefined) {
+      timeframes[label] = row.regime;
+    }
   }
 
   // Rows arrive ordered by analyzedAt desc, so rows[0] is the freshest.
@@ -525,10 +527,7 @@ export async function getHomeData(): Promise<HomeData> {
     getReliableCoinRows(5),
   ]);
 
-  console.log('BTC ROWS:', JSON.stringify(btcRows, null, 2));
   const btc = toBtcRegimeView(btcRows, now);
-
-  console.log('BTC VIEW:', JSON.stringify(btc, null, 2));
 
   return {
     btc,
