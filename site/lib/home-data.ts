@@ -122,7 +122,7 @@ export function getBtcRegimeRows(): Promise<MarketRegimeRow[]> {
           aiConfidence: true,
           analyzedAt: true,
         },
-        orderBy: { analyzedAt: 'desc' },
+        orderBy: { id: 'desc' },
       });
 
       return rows.map((row) => ({
@@ -525,8 +525,13 @@ export async function getHomeData(): Promise<HomeData> {
     getReliableCoinRows(5),
   ]);
 
+  console.log('BTC ROWS:', JSON.stringify(btcRows, null, 2));
+  const btc = toBtcRegimeView(btcRows, now);
+
+  console.log('BTC VIEW:', JSON.stringify(btc, null, 2));
+
   return {
-    btc: toBtcRegimeView(btcRows, now),
+    btc,
     btcTrend: btcTrendRows.map(toRegimeTrendPoint),
     longSignals: longRows.map((row) => toSignalView(row, now)),
     shortSignals: shortRows.map((row) => toSignalView(row, now)),
