@@ -11,6 +11,7 @@ require '/aute/global/eksternal/indicators.php';
 require '/aute/global/eksternal/futures_common.php';
 
 $ip = ipinfo();
+$dba = null;
 
 function calcularStrengthConfidence($data)
 {
@@ -184,12 +185,12 @@ function calcularStrengthConfidence($data)
     ];
 }
 
-
-$dba = new Database('automato');
-
 while (true) {
 
-    while (true) {
+    try {
+        if ($dba === null) {
+            $dba = new Database('automato');
+        }
 
         $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 50", null);
         if (!$events) {
@@ -204,14 +205,22 @@ while (true) {
 
             switch ($tipo) {
                 case 'regime_btc':
-                    $bind = [
-                        ':id' => $event['id'],
-                        ':status' => 1
-                    ];
-                    $db->update("outbox_events", "WHERE id=:id", $bind);
 
                     $data = json_decode($payload, true);
+                    if (!$data) {
+                        $db->update(
+                            "outbox_events",
+                            "WHERE id=:id",
+                            [
+                                ':id' => $event['id'],
+                                ':status' => 3
+                            ]
+                        );
+                        break;
+                    }
+
                     $data_func = calcularStrengthConfidence($data);
+
                     $bind = [
                         ':symbol' => 'BTC',
                         ':quote_asset' => 'USDT',
@@ -222,6 +231,7 @@ while (true) {
                         ':analyzed_at' => $event['data_cadastro']
                     ];
                     $dba->insert("market_regimes", $bind);
+
                     $bind = [
                         ':symbol' => 'BTC',
                         ':quote_asset' => 'USDT',
@@ -232,6 +242,7 @@ while (true) {
                         ':analyzed_at' => $event['data_cadastro']
                     ];
                     $dba->insert("market_regimes", $bind);
+
                     $bind = [
                         ':symbol' => 'BTC',
                         ':quote_asset' => 'USDT',
@@ -242,6 +253,12 @@ while (true) {
                         ':analyzed_at' => $event['data_cadastro']
                     ];
                     $dba->insert("market_regimes", $bind);
+
+                    $bind = [
+                        ':id' => $event['id'],
+                        ':status' => 1
+                    ];
+                    $db->update("outbox_events", "WHERE id=:id", $bind);
 
                 break;
 
@@ -254,5 +271,9 @@ while (true) {
                 break;
             }
         }
+
+    } catch (Throwable $e) {
+        echo date('Y-m-d H:i:s') . " - ERRO: " . $e->getMessage() . PHP_EOL;
+        exit(1);
     }
 }
