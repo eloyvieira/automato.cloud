@@ -307,8 +307,24 @@ export function getProfitableCoinRows(limit = 5): Promise<CoinRankRow[]> {
 function toBtcRegimeView(rows: MarketRegimeRow[], now: number): BtcRegimeView {
   const timeframes: Partial<Record<TimeframeLabel, RegimeCode>> = {};
 
+  const normalizeTimeframe = (timeframe: string): TimeframeLabel | null => {
+    const map: Record<string, TimeframeLabel> = {
+      '15m': '15m',
+      '1h': '1h',
+      '4h': '4h',
+      '1d': '1d',
+
+      fifteen_m: '15m',
+      one_h: '1h',
+      four_h: '4h',
+      one_d: '1d',
+    };
+
+    return map[timeframe] ?? null;
+  };
+
   for (const row of rows) {
-    const label = TIMEFRAME_LABEL[row.timeframe];
+    const label = normalizeTimeframe(row.timeframe);
     if (label) timeframes[label] = row.regime;
   }
 
