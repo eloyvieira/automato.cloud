@@ -327,7 +327,7 @@ while (true) {
 
 
         $menosdays = date('Y-m-d H:i:s',strtotime('-7 days',strtotime( date("Y-m-d H:i:s") )));
-        $futures_markets_log = $db->delete("futures_markets_log", "WHERE date_creation <= '".$menosdays."' ", null);
+        $outbox_events = $db->delete("outbox_events", "WHERE data_cadastro <= '".$menosdays."' ", null);
 
     } catch (Throwable $e) {
         echo date('Y-m-d H:i:s') . " - ERRO: " . $e->getMessage() . PHP_EOL;
