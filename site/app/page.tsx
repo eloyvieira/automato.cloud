@@ -132,8 +132,8 @@ export default async function Home() {
 
 
   <div className="mt-7 grid gap-5 lg:grid-cols-2">
-    <OpportunityTable title="Top long opportunities" signals={longSignals} direction="long" />
-    <OpportunityTable title="Top short opportunities" signals={shortSignals} direction="short" />
+    <OpportunityTable title="Latest long signals" signals={longSignals} direction="long" />
+    <OpportunityTable title="Latest short signals" signals={shortSignals} direction="short" />
   </div>
 
   <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

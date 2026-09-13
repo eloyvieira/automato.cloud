@@ -25,11 +25,14 @@ export type Signal = {
   reliability: number;
   strategy: string;
   timeframe: string;
+  category: string;
   age: string;
   entry: string;
   stop: string;
   tp1: string;
   tp2: string;
+  mfe: string;
+  mae: string;
 };
 
 /** Structured Bitcoin regime data - the UI decides how to label it. */
@@ -86,5 +89,6 @@ export type HomeData = {
   btcTrend: RegimeTrendPoint[];
   longSignals: Signal[];
   shortSignals: Signal[];
+  profitableSignals: Signal[];
   reliableCoins: CoinRank[];
 };

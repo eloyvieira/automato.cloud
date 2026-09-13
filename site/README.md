@@ -19,9 +19,22 @@ npx prisma generate
 npx prisma migrate dev
 npx prisma db seed
 npm run dev
+redis-cli MONITOR
 
-schema.prisma
-npx prisma migrate dev --name name_action_to_table
+- adicione o campo no schema.prisma
+npx prisma migrate dev --name add_signal_mfe_mae_category
+npx prisma generate
+npm run dev
+- prod
+npx prisma migrate deploy
+
+- se importou dump
+npx prisma migrate status
+adicione o campo no schema.prisma
+altera table no mysql
+npx prisma generate
+- prod
+npx prisma migrate deploy
 ```
 
 ```bash

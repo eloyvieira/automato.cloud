@@ -200,12 +200,20 @@ model Signal {
   timeframe   Timeframe
   direction   SignalDirection
   regime      SignalRegime
+
+  category    String?         @db.VarChar(30)
+
   reliability Decimal?        @db.Decimal(5, 2)
   entryPrice  Decimal?        @map("entry_price") @db.Decimal(24, 12)
   stopLoss    Decimal?        @map("stop_loss") @db.Decimal(24, 12)
+
   takeProfit1 Decimal?        @map("take_profit1") @db.Decimal(24, 12)
   takeProfit2 Decimal?        @map("take_profit2") @db.Decimal(24, 12)
+
   resultPerc  Decimal?        @map("result_perc") @db.Decimal(8, 4)
+  mfe         Decimal?        @db.Decimal(8, 4)
+  mae         Decimal?        @db.Decimal(8, 4)
+
   status      SignalStatus    @default(active)
   detectedAt  DateTime        @map("detected_at")
   expiresAt   DateTime?       @map("expires_at")
@@ -215,6 +223,8 @@ model Signal {
   @@index([status, strategy, timeframe, detectedAt], map: "idx_active")
   @@index([symbol, quoteAsset, detectedAt], map: "idx_symbol")
   @@index([status, reliability], map: "idx_rank")
+  @@index([category, timeframe, status], map: "idx_category")
+
   @@map("signals")
 }
 

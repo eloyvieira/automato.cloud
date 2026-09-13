@@ -75,10 +75,13 @@ type SignalRow = {
   reliability: number | null;
   strategy: PrismaStrategy;
   timeframe: PrismaTimeframe;
+  category: string | null;
   entryPrice: number | null;
   stopLoss: number | null;
   takeProfit1: number | null;
   takeProfit2: number | null;
+  mfe: number | null;
+  mae: number | null;
   detectedAt: string;
 };
 
@@ -195,8 +198,8 @@ async function getTopSignalRows(
     key,
     async () => {
       const signals = await prisma.signal.findMany({
-        where: { status: 'active', direction },
-        orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+        where: { status: 'active', direction},
+        orderBy: [{ detectedAt: 'desc' }],
         take: limit,
         select: {
           id: true,
@@ -207,10 +210,13 @@ async function getTopSignalRows(
           reliability: true,
           strategy: true,
           timeframe: true,
+          category: true,
           entryPrice: true,
           stopLoss: true,
           takeProfit1: true,
           takeProfit2: true,
+          mfe: true,
+          mae: true,
           detectedAt: true,
         },
       });
@@ -224,10 +230,72 @@ async function getTopSignalRows(
         reliability: toNumber(signal.reliability),
         strategy: signal.strategy as PrismaStrategy,
         timeframe: signal.timeframe as PrismaTimeframe,
+        category: signal.category,
         entryPrice: toNumber(signal.entryPrice),
         stopLoss: toNumber(signal.stopLoss),
         takeProfit1: toNumber(signal.takeProfit1),
         takeProfit2: toNumber(signal.takeProfit2),
+        mfe: toNumber(signal.mfe),
+        mae: toNumber(signal.mae),
+        detectedAt: signal.detectedAt.toISOString(),
+      }));
+    },
+    CACHE_TTL,
+  );
+}
+
+async function getTopMfeSignalRows(limit: number): Promise<SignalRow[]> {
+  const key = CACHE_KEYS.topMfe(limit);
+
+  return getCached<SignalRow[]>(
+    key,
+    async () => {
+      const signals = await prisma.signal.findMany({
+        where: {
+          status: 'active',
+          mfe: { not: null },
+        },
+        orderBy: [
+          { mfe: 'desc' },
+          { detectedAt: 'desc' },
+        ],
+        take: limit,
+        select: {
+          id: true,
+          symbol: true,
+          quoteAsset: true,
+          direction: true,
+          regime: true,
+          reliability: true,
+          strategy: true,
+          timeframe: true,
+          category: true,
+          entryPrice: true,
+          stopLoss: true,
+          takeProfit1: true,
+          takeProfit2: true,
+          mfe: true,
+          mae: true,
+          detectedAt: true,
+        },
+      });
+
+      return signals.map((signal) => ({
+        id: signal.id.toString(),
+        symbol: signal.symbol,
+        quoteAsset: signal.quoteAsset,
+        direction: signal.direction,
+        regime: signal.regime,
+        reliability: toNumber(signal.reliability),
+        strategy: signal.strategy as PrismaStrategy,
+        timeframe: signal.timeframe as PrismaTimeframe,
+        category: signal.category,
+        entryPrice: toNumber(signal.entryPrice),
+        stopLoss: toNumber(signal.stopLoss),
+        takeProfit1: toNumber(signal.takeProfit1),
+        takeProfit2: toNumber(signal.takeProfit2),
+        mfe: toNumber(signal.mfe),
+        mae: toNumber(signal.mae),
         detectedAt: signal.detectedAt.toISOString(),
       }));
     },
@@ -350,6 +418,11 @@ function toRegimeTrendPoint(row: MarketRegimeRow): RegimeTrendPoint {
   };
 }
 
+function formatSignedPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '--';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
 function toSignalView(row: SignalRow, now: number): Signal {
   return {
     id: row.id,
@@ -358,11 +431,14 @@ function toSignalView(row: SignalRow, now: number): Signal {
     reliability: Math.round(row.reliability ?? 0),
     strategy: STRATEGY_LABEL[row.strategy] ?? row.strategy,
     timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
+    category: row.category ?? '--',
     age: formatAge(row.detectedAt, now),
     entry: formatPrice(row.entryPrice),
     stop: formatPrice(row.stopLoss),
     tp1: formatPrice(row.takeProfit1),
     tp2: formatPrice(row.takeProfit2),
+    mfe: formatSignedPercent(row.mfe),
+    mae: formatSignedPercent(row.mae),
   };
 }
 
@@ -435,10 +511,13 @@ export function getRankingRows(kind: RankingKind, limit = 20): Promise<RankingRo
           reliability: true,
           strategy: true,
           timeframe: true,
+          category: true,
           entryPrice: true,
           stopLoss: true,
           takeProfit1: true,
           takeProfit2: true,
+          mfe: true,
+          mae: true,
           resultPerc: true,
           detectedAt: true,
         },
@@ -453,10 +532,13 @@ export function getRankingRows(kind: RankingKind, limit = 20): Promise<RankingRo
         reliability: toNumber(signal.reliability),
         strategy: signal.strategy as PrismaStrategy,
         timeframe: signal.timeframe as PrismaTimeframe,
+        category: signal.category,
         entryPrice: toNumber(signal.entryPrice),
         stopLoss: toNumber(signal.stopLoss),
         takeProfit1: toNumber(signal.takeProfit1),
         takeProfit2: toNumber(signal.takeProfit2),
+        mfe: toNumber(signal.mfe),
+        mae: toNumber(signal.mae),
         resultPerc: toNumber(signal.resultPerc),
         detectedAt: signal.detectedAt.toISOString(),
       }));
@@ -519,11 +601,12 @@ export async function getProfitableCoins(limit = 5): Promise<CoinRank[]> {
 export async function getHomeData(): Promise<HomeData> {
   const now = Date.now();
 
-  const [btcRows, btcTrendRows, longRows, shortRows, reliableRows] = await Promise.all([
+  const [btcRows, btcTrendRows, longRows, shortRows, topMfeRows, reliableRows] = await Promise.all([
     getBtcRegimeRows(),
     getBtcRegimeTrendRows(),
     getTopLongSignalRows(5),
     getTopShortSignalRows(5),
+    getTopMfeSignalRows(3),
     getReliableCoinRows(5),
   ]);
 
@@ -534,6 +617,7 @@ export async function getHomeData(): Promise<HomeData> {
     btcTrend: btcTrendRows.map(toRegimeTrendPoint),
     longSignals: longRows.map((row) => toSignalView(row, now)),
     shortSignals: shortRows.map((row) => toSignalView(row, now)),
+    profitableSignals: topMfeRows.map((row) => toSignalView(row, now)),
     reliableCoins: reliableRows.map(toCoinRank),
   };
 }
