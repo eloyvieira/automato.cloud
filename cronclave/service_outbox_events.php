@@ -326,7 +326,7 @@ while (true) {
 
 
 
-        $menosdays = date('Y-m-d H:i:s',strtotime('-7 days',strtotime( date("Y-m-d H:i:s") )));
+        $menosdays = date('Y-m-d H:i:s',strtotime('-2 days',strtotime( date("Y-m-d H:i:s") )));
         $outbox_events = $db->delete("outbox_events", "WHERE data_cadastro <= '".$menosdays."' ", null);
 
     } catch (Throwable $e) {
