@@ -300,11 +300,7 @@ while (true) {
                         );
                         break;
                     }
-                    $bind = [
-                        ':id' => $data[':data'],
-                        ':result_perc' => $data[':result_perc']
-                    ];
-                    $dba->update("signals", "WHERE id=:id", $bind);
+                    $dba->update("signals", "WHERE data=:data", $data);
 
                     $bind = [
                         ':id' => $event['id'],
