@@ -304,7 +304,7 @@ while (true) {
                         ':id' => $data[':data'],
                         ':result_perc' => $data[':result_perc']
                     ];
-                    $db->update("signals", "WHERE id=:id", $bind);
+                    $dba->update("signals", "WHERE id=:id", $bind);
 
                     $bind = [
                         ':id' => $event['id'],
@@ -323,6 +323,11 @@ while (true) {
                 break;
             }
         }
+
+
+
+        $menosdays = date('Y-m-d H:i:s',strtotime('-7 days',strtotime( date("Y-m-d H:i:s") )));
+        $futures_markets_log = $db->delete("futures_markets_log", "WHERE date_creation <= '".$menosdays."' ", null);
 
     } catch (Throwable $e) {
         echo date('Y-m-d H:i:s') . " - ERRO: " . $e->getMessage() . PHP_EOL;
