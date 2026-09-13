@@ -301,8 +301,8 @@ while (true) {
                         break;
                     }
                     $bind = [
-                        ':id' => $data['data'],
-                        ':result_perc' => $data['result_perc']
+                        ':id' => $data[':data'],
+                        ':result_perc' => $data[':result_perc']
                     ];
                     $db->update("signals", "WHERE id=:id", $bind);
 
