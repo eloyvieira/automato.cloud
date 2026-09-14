@@ -10,12 +10,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+
 import type { RegimeTrendPoint } from '@/lib/home-types';
 import { REGIME_SCORE_MAX, REGIME_SCORE_MIN, regimeByScore, regimeLabel } from '@/lib/format';
 
 const Y_TICKS = [REGIME_SCORE_MAX, 1, 0, -1, REGIME_SCORE_MIN];
 
-/** Rótulo acima de cada ponto, como no exemplo "Customized Label Line Chart". */
 function CustomizedLabel({ x, y, value }: { x?: number; y?: number; value?: number }) {
   if (x === undefined || y === undefined || value === undefined) return null;
   if (value === 1 || value === 2 || value === 0 || value === -1 || value === -2) return null;
@@ -40,7 +40,6 @@ function CustomizedDot(props: any) {
   return <circle cx={cx} cy={cy} r={3.5} fill={color} />;
 }
 
-/** Tick rotacionado no eixo X, como no exemplo da Recharts. */
 function CustomizedAxisTick({
   x,
   y,
@@ -61,7 +60,6 @@ function CustomizedAxisTick({
   );
 }
 
-/** Tick do eixo Y com o texto de REGIME_LABEL, quebrando em linhas curtas. */
 function RegimeAxisTick({
   x,
   y,
@@ -75,6 +73,7 @@ function RegimeAxisTick({
 
   const code = regimeByScore(payload.value);
   const label = code ? regimeLabel(code) : '';
+
   if (!label) return null;
 
   const words = label.split(' ');
@@ -83,6 +82,7 @@ function RegimeAxisTick({
 
   for (const word of words) {
     const next = current ? `${current} ${word}` : word;
+
     if (next.length > 14 && current) {
       lines.push(current);
       current = word;
@@ -90,6 +90,7 @@ function RegimeAxisTick({
       current = next;
     }
   }
+
   if (current) lines.push(current);
 
   const lineHeight = 11;
@@ -114,6 +115,7 @@ function RegimeTooltip({
   payload?: { payload: RegimeTrendPoint }[];
 }) {
   const point = active ? payload?.[0]?.payload : undefined;
+
   if (!point) return null;
 
   return (
@@ -126,24 +128,35 @@ function RegimeTooltip({
   );
 }
 
-export function BtcRegimeTrendChart({ points }: { points: RegimeTrendPoint[] }) {
+export function BtcRegimeTrendChart({
+  points,
+  premium,
+}: {
+  points: RegimeTrendPoint[];
+  premium: boolean;
+}) {
+  const limit = premium ? 20 : 7;
+  const visiblePoints = points.slice(-limit);
+
   return (
     <div className="rounded-2xl border border-white/[0.09] bg-[#0f1721] p-4 sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
           Bitcoin regime trend
         </p>
-        <p className="text-[10px] text-slate-500">15m · last {points.length || 7} readings</p>
+        <p className="text-[10px] text-slate-500">
+          15m · last {visiblePoints.length || limit} readings
+        </p>
       </div>
 
       <div className="mt-3 h-[220px] w-full">
-        {points.length < 2 ? (
+        {visiblePoints.length < 2 ? (
           <div className="flex h-full items-center justify-center px-4 text-center text-xs leading-5 text-slate-500">
             Not enough 15m readings stored yet to draw a trend.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points} margin={{ top: 18, right: 12, left: 0, bottom: 8 }}>
+            <LineChart data={visiblePoints} margin={{ top: 18, right: 12, left: 0, bottom: 8 }}>
               <defs>
                 <linearGradient id="regimeLineGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#34d399" />
@@ -173,11 +186,7 @@ export function BtcRegimeTrendChart({ points }: { points: RegimeTrendPoint[] }) 
                 tickLine={false}
               />
 
-              <ReferenceLine
-                y={0}
-                stroke="rgba(255,255,255,.18)"
-                strokeDasharray="4 4"
-              />
+              <ReferenceLine y={0} stroke="rgba(255,255,255,.18)" strokeDasharray="4 4" />
 
               <Tooltip
                 content={<RegimeTooltip />}

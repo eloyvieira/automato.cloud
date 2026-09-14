@@ -14,16 +14,16 @@ export async function getMostProfitableCoins(limit = 10) {
 
 export async function getBestLong(limit = 10) {
   return prisma.signal.findMany({
-    where: { status: 'active', direction: 'LONG' },
-    orderBy: { reliability: 'desc' },
+    where: { status: 'active', direction: 'LONG', mfe: { not: null } },
+    orderBy: { mfe: 'desc' },
     take: limit,
   });
 }
 
 export async function getBestShort(limit = 10) {
   return prisma.signal.findMany({
-    where: { status: 'active', direction: 'SHORT' },
-    orderBy: { reliability: 'desc' },
+    where: { status: 'active', direction: 'SHORT', mfe: { not: null } },
+    orderBy: { mfe: 'desc' },
     take: limit,
   });
 }

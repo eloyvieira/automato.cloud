@@ -16,14 +16,14 @@ export type AccessPolicy = {
 };
 
 const FREE_RANKING_KINDS: readonly RankingKind[] = [
-  'most-reliable',
+  'top-mfe',
   'most-profitable',
   'best-long',
   'best-short',
 ];
 
 const ALL_RANKING_KINDS: readonly RankingKind[] = [
-  'most-reliable',
+  'top-mfe',
   'most-profitable',
   'best-long',
   'best-short',

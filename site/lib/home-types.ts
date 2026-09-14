@@ -65,7 +65,7 @@ export type CoinRank = {
 
 /** The seven boards available on /rankings. */
 export type RankingKind =
-  | 'most-reliable'
+  | 'top-mfe'
   | 'most-profitable'
   | 'best-long'
   | 'best-short'
@@ -78,7 +78,8 @@ export type RankingEntry = {
   id: string;
   symbol: string;
   regime: string;
-  reliability: number;
+  mfe: string;
+  mae: string;
   strategy: string;
   timeframe: string;
   /** Realized result of a closed signal ("+4.20%"), null while it is open. */
@@ -91,7 +92,7 @@ export type ProfitSignal = {
   direction: 'LONG' | 'SHORT';
   strategy: string;
   timeframe: string;
-  result: string;
+  mfe: string;
   age: string;
 };
 

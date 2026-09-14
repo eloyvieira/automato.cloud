@@ -121,7 +121,7 @@ export default async function Home() {
   return <div className="min-h-screen bg-[#080d14] text-slate-200">
     <SiteHeader />
     <main>
-      <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-40" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)] lg:items-center lg:gap-10"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><BtcRegimeTrendChart points={btcTrend} /></div><BtcRegimeCard btc={btc} /></div></section>
+      <section className="relative overflow-hidden border-b border-white/[0.07]"><div className="absolute inset-0 grid-fade opacity-40" /><div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20"><div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)] lg:items-center lg:gap-10"><div className="max-w-2xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Market intelligence, updated every 5 minutes</div><h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl">Real-Time Crypto<br /><span className="text-emerald-400">Trading Signals</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Quantitative market analysis for USDT, USDC and BTC markets. See what the market is doing, without the noise.</p></div><BtcRegimeTrendChart points={btcTrend} premium={access.premium} /></div><BtcRegimeCard btc={btc} /></div></section>
       
       <section id="signals" className="mx-auto max-w-6xl px-5 py-14 lg:px-8 lg:py-20">
   <div className="mb-8 pb-4 ">
@@ -135,8 +135,8 @@ export default async function Home() {
 
 
   <div className="mt-7 grid gap-5 lg:grid-cols-2">
-    <OpportunityTable title="Latest long signals" signals={longSignals} direction="long" />
-    <OpportunityTable title="Latest short signals" signals={shortSignals} direction="short" />
+    <OpportunityTable title="Latest long signals" signals={longSignals} direction="long"  premium={access.premium}/>
+    <OpportunityTable title="Latest short signals" signals={shortSignals} direction="short" premium={access.premium} />
   </div>
 
   <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

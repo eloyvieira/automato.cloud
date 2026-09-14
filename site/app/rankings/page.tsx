@@ -16,17 +16,16 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Crypto Signal Rankings | Automato',
   description:
-    'Live crypto rankings built from real signals: most reliable, most profitable, best long and short opportunities, by strategy.',
+    'Live crypto rankings built from real signals: top MFE, most profitable, best long and short opportunities, by strategy.',
 };
 
 const TABS: { kind: RankingKind; label: string; note: string }[] = [
-  { kind: 'most-reliable', label: 'Most Reliable', note: 'Active signals with the highest reliability score.' },
-  { kind: 'most-profitable', label: 'Most Profitable', note: 'Closed signals ranked by realized result.' },
-  { kind: 'best-long', label: 'Best Long', note: 'Highest reliability among active long signals.' },
-  { kind: 'best-short', label: 'Best Short', note: 'Highest reliability among active short signals.' },
-  { kind: 'best-scalping', label: 'Best Scalping', note: 'Active scalping signals, most reliable first.' },
-  { kind: 'best-day', label: 'Best Day Trading', note: 'Active day trading signals, most reliable first.' },
-  { kind: 'best-swing', label: 'Best Swing', note: 'Active swing signals, most reliable first.' },
+  { kind: 'top-mfe', label: 'Top MFE', note: 'Active signals ranked by maximum favorable excursion (MFE).' },
+  { kind: 'best-long', label: 'Best Long', note: 'Highest MFE among active long signals.' },
+  { kind: 'best-short', label: 'Best Short', note: 'Highest MFE among active short signals.' },
+  { kind: 'best-scalping', label: 'Best Scalping', note: 'Active scalping signals, highest MFE first.' },
+  { kind: 'best-day', label: 'Best Day Trading', note: 'Active day trading signals, highest MFE first.' },
+  { kind: 'best-swing', label: 'Best Swing', note: 'Active swing signals, highest MFE first.' },
 ];
 
 function resolveTab(value: string | string[] | undefined, allowed: readonly RankingKind[]) {
@@ -40,6 +39,12 @@ function regimeClass(regime: string) {
   if (regime.includes('LONG')) return 'text-emerald-400';
   if (regime.includes('SHORT')) return 'text-red-400';
   return 'text-amber-300';
+}
+
+function signedClass(value: string) {
+  if (value.startsWith('-')) return 'text-red-400';
+  if (value === '--') return 'text-slate-500';
+  return 'text-emerald-400';
 }
 
 export default async function RankingsPage({
@@ -95,16 +100,17 @@ export default async function RankingsPage({
                 <th className="px-4 py-3 font-medium">#</th>
                 <th className="px-4 py-3 font-medium">Symbol</th>
                 <th className="px-4 py-3 font-medium">Regime</th>
-                <th className="px-4 py-3 font-medium">Reliability</th>
-                <th className="px-4 py-3 font-medium">Strategy</th>
+                <th className="px-4 py-3 font-medium">MFE</th>
+                <th className="px-4 py-3 font-medium">MAE</th>
                 <th className="px-4 py-3 font-medium">Timeframe</th>
+                <th className="px-4 py-3 font-medium">Detected</th>
                 {showResult && <th className="px-4 py-3 font-medium">Result</th>}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={showResult ? 7 : 6} className="px-4 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={showResult ? 8 : 7} className="px-4 py-8 text-center text-sm text-slate-500">
                     No data for this ranking yet.
                   </td>
                 </tr>
@@ -116,9 +122,10 @@ export default async function RankingsPage({
                     <td className="px-4 py-3">
                       <span className={`text-xs ${regimeClass(row.regime)}`}>{row.regime}</span>
                     </td>
-                    <td className="px-4 py-3 text-emerald-400">{row.reliability}%</td>
-                    <td className="px-4 py-3 text-slate-400">{row.strategy}</td>
+                    <td className={`px-4 py-3 ${signedClass(row.mfe)}`}>{row.mfe}</td>
+                    <td className={`px-4 py-3 ${signedClass(row.mae)}`}>{row.mae}</td>
                     <td className="px-4 py-3 text-slate-400">{row.timeframe}</td>
+                    <td className="px-4 py-3 text-slate-400">{row.detectedAt}</td>
                     {showResult && (
                       <td className={`px-4 py-3 ${row.result?.startsWith('-') ? 'text-red-400' : 'text-emerald-400'}`}>
                         {row.result ?? '--'}

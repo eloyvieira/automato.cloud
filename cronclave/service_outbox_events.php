@@ -362,17 +362,15 @@ while (true) {
         // =====================================================
         // FECHA SINAIS COM MAIS DE 24 HORAS
         // =====================================================
-        $dba->update(
-            "signals",
-            "WHERE status='active' 
-             AND detected_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)",
-            [
-                ':status' => 'closed',
-                ':closed_at' => date('Y-m-d H:i:s')
-            ]
-        );
+        $dba->update( "signals", "WHERE status='active'  AND detected_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)", [ ':status' => 'closed', ':closed_at' => date('Y-m-d H:i:s')]);
 
-        $menosdays = date('Y-m-d H:i:s',strtotime('-15 days',strtotime( date("Y-m-d H:i:s") )));
+
+        // =====================================================
+        // REMOVE dados DEPOIS DE 7 DIAS
+        // =====================================================
+        $menosdays = date('Y-m-d H:i:s',strtotime('-7 days',strtotime( date("Y-m-d H:i:s") )));
+        $outbox_events = $db->delete("signals", "WHERE detected_at <= '".$menosdays."' ", null);
+
         $outbox_events = $db->delete("outbox_events", "WHERE data_cadastro <= '".$menosdays."' ", null);
         usleep(500000);
 

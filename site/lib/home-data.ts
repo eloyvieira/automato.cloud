@@ -55,7 +55,7 @@ type PrismaStrategy = keyof typeof STRATEGY_LABEL;
 
 /** Timeframe e número de leituras do gráfico de tendência do hero. */
 const TREND_TIMEFRAME: PrismaTimeframe = 'fifteen_m';
-const TREND_POINTS = 7;
+const TREND_POINTS = 20;
 
 /** Cached row shapes: plain JSON only (no Decimal, no Date, no BigInt). */
 type MarketRegimeRow = {
@@ -469,40 +469,40 @@ type RankingRow = SignalRow & { resultPerc: number | null };
 
 /**
  * Prisma filter/order for each board. Every board reads real `signals` rows:
- * the profitability board looks at closed signals (`result_perc`), the others
- * at currently active ones.
+ * Top MFE and direction/strategy boards rank active signals by `mfe`;
+ * Most Profitable ranks closed signals by `result_perc`.
  */
 const RANKING_QUERY: Record<
   RankingKind,
   { where: Record<string, unknown>; orderBy: Record<string, 'asc' | 'desc'>[] }
 > = {
-  'most-reliable': {
-    where: { status: 'active', reliability: { not: null } },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+  'top-mfe': {
+    where: { status: 'active', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
   'most-profitable': {
     where: { status: 'closed', resultPerc: { not: null } },
     orderBy: [{ resultPerc: 'desc' }, { closedAt: 'desc' }],
   },
   'best-long': {
-    where: { status: 'active', direction: 'LONG' },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+    where: { status: 'active', direction: 'LONG', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
   'best-short': {
-    where: { status: 'active', direction: 'SHORT' },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+    where: { status: 'active', direction: 'SHORT', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
   'best-scalping': {
-    where: { status: 'active', strategy: 'scalping' },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+    where: { status: 'active', strategy: 'scalping', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
   'best-day': {
-    where: { status: 'active', strategy: 'day' },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+    where: { status: 'active', strategy: 'day', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
   'best-swing': {
-    where: { status: 'active', strategy: 'swing' },
-    orderBy: [{ reliability: 'desc' }, { detectedAt: 'desc' }],
+    where: { status: 'active', strategy: 'swing', mfe: { not: null } },
+    orderBy: [{ mfe: 'desc' }, { detectedAt: 'desc' }],
   },
 };
 
@@ -578,9 +578,16 @@ function toRankingEntry(row: RankingRow): RankingEntry {
     id: row.id,
     symbol: pair(row.symbol, row.quoteAsset),
     regime: row.regime,
-    reliability: Math.round(row.reliability ?? 0),
+    mfe: formatSignedPercent(row.mfe),
+    mae: formatSignedPercent(row.mae),
     strategy: STRATEGY_LABEL[row.strategy] ?? row.strategy,
     timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
+    detectedAt: new Date(row.detectedAt).toLocaleString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
     result:
       row.resultPerc === null
         ? null
@@ -604,7 +611,7 @@ type ProfitableSignalRow = {
   direction: 'LONG' | 'SHORT';
   strategy: PrismaStrategy;
   timeframe: PrismaTimeframe;
-  resultPerc: number;
+  mfe: number;
   closedAt: string;
 };
 
@@ -620,13 +627,13 @@ async function getTopProfitableSignalRows(
       const rows = await prisma.signal.findMany({
         where: {
           status: 'closed',
-          resultPerc: { not: null },
+          mfe: { not: null },
           closedAt: {
             gte: since(windowDays),
             ...(cutoff ? { lte: cutoff } : {}),
           },
         },
-        orderBy: [{ resultPerc: 'desc' }, { closedAt: 'desc' }],
+        orderBy: [{ mfe: 'desc' }, { closedAt: 'desc' }],
         take: limit,
         select: {
           id: true,
@@ -634,22 +641,24 @@ async function getTopProfitableSignalRows(
           quoteAsset: true,
           direction: true,
           strategy: true,
+          regime: true,
           timeframe: true,
-          resultPerc: true,
+          mfe: true,
           closedAt: true,
         },
       });
 
       return rows
-        .filter((row) => row.resultPerc !== null && row.closedAt !== null)
+        .filter((row) => row.mfe !== null && row.closedAt !== null)
         .map((row) => ({
           id: row.id.toString(),
           symbol: row.symbol,
           quoteAsset: row.quoteAsset,
           direction: row.direction,
+          regime: row.regime,
           strategy: row.strategy as PrismaStrategy,
           timeframe: row.timeframe as PrismaTimeframe,
-          resultPerc: Number(row.resultPerc),
+          mfe: Number(row.mfe),
           closedAt: row.closedAt!.toISOString(),
         }));
     },
@@ -664,7 +673,8 @@ function toProfitSignal(row: ProfitableSignalRow, now: number): ProfitSignal {
     direction: row.direction,
     strategy: STRATEGY_LABEL[row.strategy] ?? row.strategy,
     timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
-    result: formatSignedPercent(row.resultPerc),
+    regime: row.regime,
+    mfe: formatSignedPercent(row.mfe),
     age: formatAge(row.closedAt, now),
   };
 }
