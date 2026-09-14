@@ -6,43 +6,30 @@ async function main() {
   console.log('Seeding plans...');
   await prisma.plan.upsert({
     where: { slug: 'premium-weekly' },
-    update: {},
+    update: {
+      name: 'Premium Weekly',
+      type: 'premium',
+      price: 9.90,
+      billingPeriod: 'weekly',
+      apiRequestsDay: 10000,
+      isActive: true,
+    },
     create: {
       name: 'Premium Weekly',
       slug: 'premium-weekly',
       type: 'premium',
       price: 9.90,
       billingPeriod: 'weekly',
-      isActive: true,
-    },
-  });
-
-  await prisma.plan.upsert({
-    where: { slug: 'api-starter' },
-    update: {},
-    create: {
-      name: 'API Starter',
-      slug: 'api-starter',
-      type: 'api',
-      price: 29.00,
-      billingPeriod: 'monthly',
       apiRequestsDay: 10000,
       isActive: true,
     },
   });
 
-  await prisma.plan.upsert({
-    where: { slug: 'api-professional' },
-    update: {},
-    create: {
-      name: 'API Professional',
-      slug: 'api-professional',
-      type: 'api',
-      price: 79.00,
-      billingPeriod: 'monthly',
-      apiRequestsDay: 100000,
-      isActive: true,
-    },
+  // Legacy API-only plans are no longer part of the commercial model.
+  // Keep the rows for historical subscriptions, but do not offer them anymore.
+  await prisma.plan.updateMany({
+    where: { type: 'api' },
+    data: { isActive: false },
   });
 
   console.log('Seeding BTC market regimes...');

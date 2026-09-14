@@ -166,7 +166,7 @@ export default function FaqPage() {
         </div>
       </main>
 
-      <SiteFooter showPreviewToggle />
+      <SiteFooter />
     </div>
   );
 }

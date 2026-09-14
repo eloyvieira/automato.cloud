@@ -37,15 +37,20 @@ export const CACHE_KEYS = {
   btcRegime: 'market:btc:regime',
   btcRegimeTrend: (timeframe: string, points: number) =>
     `market:btc:regime:trend:${timeframe}:${points}`,
-  topLong: (limit: number) => `signals:long:top:${limit}`,
-  topShort: (limit: number) => `signals:short:top:${limit}`,
+  topLong: (limit: number | null, delayMinutes = 0) =>
+    `signals:long:top:${limit ?? 'all'}:delay:${delayMinutes}`,
+  topShort: (limit: number | null, delayMinutes = 0) =>
+    `signals:short:top:${limit ?? 'all'}:delay:${delayMinutes}`,
   rankingReliable: (windowDays: number, limit: number) =>
     `ranking:reliable:${windowDays}d:${limit}`,
   rankingProfitable: (windowDays: number, limit: number) =>
     `ranking:profitable:${windowDays}d:${limit}`,
-  rankingBoard: (kind: string, limit: number) => `ranking:board:${kind}:${limit}`,
-  topMfe: (limit: number) =>
-    `signals:top-mfe:${limit}`,
+  rankingBoard: (kind: string, limit: number | null, delayMinutes = 0) =>
+    `ranking:board:${kind}:${limit ?? 'all'}:delay:${delayMinutes}`,
+  topMfe: (limit: number, delayMinutes = 0) =>
+    `signals:top-mfe:${limit}:delay:${delayMinutes}`,
+  topProfitableSignals: (windowDays: number, limit: number, delayMinutes = 0) =>
+    `signals:top-profitable:${windowDays}d:${limit}:delay:${delayMinutes}`,
 } as const;
 
 /** Market data is recalculated roughly every 5 minutes. */

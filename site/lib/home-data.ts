@@ -13,6 +13,7 @@ import type {
   BtcRegimeView,
   CoinRank,
   HomeData,
+  ProfitSignal,
   RankingEntry,
   RankingKind,
   RegimeCode,
@@ -20,6 +21,7 @@ import type {
   Signal,
   TimeframeLabel,
 } from './home-types';
+import { cutoffDate, type AccessPolicy } from './access-policy';
 
 const BTC_SYMBOL = 'BTC';
 const BTC_QUOTE_ASSET = 'USDT';
@@ -189,18 +191,26 @@ export function getBtcRegimeTrendRows(): Promise<MarketRegimeRow[]> {
 
 async function getTopSignalRows(
   direction: 'LONG' | 'SHORT',
-  limit: number,
+  limit: number | null,
+  delayMinutes = 0,
 ): Promise<SignalRow[]> {
   const key =
-    direction === 'LONG' ? CACHE_KEYS.topLong(limit) : CACHE_KEYS.topShort(limit);
+    direction === 'LONG'
+      ? CACHE_KEYS.topLong(limit, delayMinutes)
+      : CACHE_KEYS.topShort(limit, delayMinutes);
 
   return getCached<SignalRow[]>(
     key,
     async () => {
+      const cutoff = cutoffDate(delayMinutes);
       const signals = await prisma.signal.findMany({
-        where: { status: 'active', direction},
+        where: {
+          status: 'active',
+          direction,
+          ...(cutoff ? { detectedAt: { lte: cutoff } } : {}),
+        },
         orderBy: [{ detectedAt: 'desc' }],
-        take: limit,
+        ...(limit === null ? {} : { take: limit }),
         select: {
           id: true,
           symbol: true,
@@ -244,16 +254,18 @@ async function getTopSignalRows(
   );
 }
 
-async function getTopMfeSignalRows(limit: number): Promise<SignalRow[]> {
-  const key = CACHE_KEYS.topMfe(limit);
+async function getTopMfeSignalRows(limit: number, delayMinutes = 0): Promise<SignalRow[]> {
+  const key = CACHE_KEYS.topMfe(limit, delayMinutes);
 
   return getCached<SignalRow[]>(
     key,
     async () => {
+      const cutoff = cutoffDate(delayMinutes);
       const signals = await prisma.signal.findMany({
         where: {
           status: 'active',
           mfe: { not: null },
+          ...(cutoff ? { detectedAt: { lte: cutoff } } : {}),
         },
         orderBy: [
           { mfe: 'desc' },
@@ -303,12 +315,12 @@ async function getTopMfeSignalRows(limit: number): Promise<SignalRow[]> {
   );
 }
 
-export function getTopLongSignalRows(limit = 5): Promise<SignalRow[]> {
-  return getTopSignalRows('LONG', limit);
+export function getTopLongSignalRows(limit: number | null = 5, delayMinutes = 0): Promise<SignalRow[]> {
+  return getTopSignalRows('LONG', limit, delayMinutes);
 }
 
-export function getTopShortSignalRows(limit = 5): Promise<SignalRow[]> {
-  return getTopSignalRows('SHORT', limit);
+export function getTopShortSignalRows(limit: number | null = 5, delayMinutes = 0): Promise<SignalRow[]> {
+  return getTopSignalRows('SHORT', limit, delayMinutes);
 }
 
 /** Average reliability per market over the ranking window. */
@@ -426,6 +438,7 @@ function formatSignedPercent(value: number | null | undefined): string {
 function toSignalView(row: SignalRow, now: number): Signal {
   return {
     id: row.id,
+    direction: row.direction,
     symbol: pair(row.symbol, row.quoteAsset),
     regime: row.regime,
     reliability: Math.round(row.reliability ?? 0),
@@ -433,10 +446,12 @@ function toSignalView(row: SignalRow, now: number): Signal {
     timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
     category: row.category ?? '--',
     age: formatAge(row.detectedAt, now),
+
     entry: formatPrice(row.entryPrice),
     stop: formatPrice(row.stopLoss),
     tp1: formatPrice(row.takeProfit1),
     tp2: formatPrice(row.takeProfit2),
+
     mfe: formatSignedPercent(row.mfe),
     mae: formatSignedPercent(row.mae),
   };
@@ -492,16 +507,27 @@ const RANKING_QUERY: Record<
 };
 
 /** Raw rows of one ranking board, cached in Redis like every other read. */
-export function getRankingRows(kind: RankingKind, limit = 20): Promise<RankingRow[]> {
+export function getRankingRows(
+  kind: RankingKind,
+  limit: number | null = 20,
+  delayMinutes = 0,
+): Promise<RankingRow[]> {
   const query = RANKING_QUERY[kind];
 
   return getCached<RankingRow[]>(
-    CACHE_KEYS.rankingBoard(kind, limit),
+    CACHE_KEYS.rankingBoard(kind, limit, delayMinutes),
     async () => {
+      const cutoff = cutoffDate(delayMinutes);
+      const delayField = kind === 'most-profitable' ? 'closedAt' : 'detectedAt';
+      const where = {
+        ...query.where,
+        ...(cutoff ? { [delayField]: { lte: cutoff } } : {}),
+      };
+
       const signals = await prisma.signal.findMany({
-        where: query.where,
+        where,
         orderBy: query.orderBy,
-        take: limit,
+        ...(limit === null ? {} : { take: limit }),
         select: {
           id: true,
           symbol: true,
@@ -563,8 +589,84 @@ function toRankingEntry(row: RankingRow): RankingEntry {
 }
 
 /** One ranking board, ready to render. */
-export async function getRanking(kind: RankingKind, limit = 20): Promise<RankingEntry[]> {
-  return (await getRankingRows(kind, limit)).map(toRankingEntry);
+export async function getRanking(
+  kind: RankingKind,
+  limit: number | null = 20,
+  delayMinutes = 0,
+): Promise<RankingEntry[]> {
+  return (await getRankingRows(kind, limit, delayMinutes)).map(toRankingEntry);
+}
+
+type ProfitableSignalRow = {
+  id: string;
+  symbol: string;
+  quoteAsset: string;
+  direction: 'LONG' | 'SHORT';
+  strategy: PrismaStrategy;
+  timeframe: PrismaTimeframe;
+  resultPerc: number;
+  closedAt: string;
+};
+
+async function getTopProfitableSignalRows(
+  windowDays: number,
+  limit: number,
+  delayMinutes = 0,
+): Promise<ProfitableSignalRow[]> {
+  return getCached<ProfitableSignalRow[]>(
+    CACHE_KEYS.topProfitableSignals(windowDays, limit, delayMinutes),
+    async () => {
+      const cutoff = cutoffDate(delayMinutes);
+      const rows = await prisma.signal.findMany({
+        where: {
+          status: 'closed',
+          resultPerc: { not: null },
+          closedAt: {
+            gte: since(windowDays),
+            ...(cutoff ? { lte: cutoff } : {}),
+          },
+        },
+        orderBy: [{ resultPerc: 'desc' }, { closedAt: 'desc' }],
+        take: limit,
+        select: {
+          id: true,
+          symbol: true,
+          quoteAsset: true,
+          direction: true,
+          strategy: true,
+          timeframe: true,
+          resultPerc: true,
+          closedAt: true,
+        },
+      });
+
+      return rows
+        .filter((row) => row.resultPerc !== null && row.closedAt !== null)
+        .map((row) => ({
+          id: row.id.toString(),
+          symbol: row.symbol,
+          quoteAsset: row.quoteAsset,
+          direction: row.direction,
+          strategy: row.strategy as PrismaStrategy,
+          timeframe: row.timeframe as PrismaTimeframe,
+          resultPerc: Number(row.resultPerc),
+          closedAt: row.closedAt!.toISOString(),
+        }));
+    },
+    CACHE_TTL,
+  );
+}
+
+function toProfitSignal(row: ProfitableSignalRow, now: number): ProfitSignal {
+  return {
+    id: row.id,
+    symbol: pair(row.symbol, row.quoteAsset),
+    direction: row.direction,
+    strategy: STRATEGY_LABEL[row.strategy] ?? row.strategy,
+    timeframe: TIMEFRAME_LABEL[row.timeframe] ?? row.timeframe,
+    result: formatSignedPercent(row.resultPerc),
+    age: formatAge(row.closedAt, now),
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -579,14 +681,14 @@ export async function getBtcRegimeTrend(): Promise<RegimeTrendPoint[]> {
   return (await getBtcRegimeTrendRows()).map(toRegimeTrendPoint);
 }
 
-export async function getTopLongSignals(limit = 5): Promise<Signal[]> {
+export async function getTopLongSignals(limit: number | null = 5, delayMinutes = 0): Promise<Signal[]> {
   const now = Date.now();
-  return (await getTopLongSignalRows(limit)).map((row) => toSignalView(row, now));
+  return (await getTopLongSignalRows(limit, delayMinutes)).map((row) => toSignalView(row, now));
 }
 
-export async function getTopShortSignals(limit = 5): Promise<Signal[]> {
+export async function getTopShortSignals(limit: number | null = 5, delayMinutes = 0): Promise<Signal[]> {
   const now = Date.now();
-  return (await getTopShortSignalRows(limit)).map((row) => toSignalView(row, now));
+  return (await getTopShortSignalRows(limit, delayMinutes)).map((row) => toSignalView(row, now));
 }
 
 export async function getReliableCoins(limit = 5): Promise<CoinRank[]> {
@@ -598,15 +700,24 @@ export async function getProfitableCoins(limit = 5): Promise<CoinRank[]> {
 }
 
 /** Everything the Home page needs, fetched in parallel. */
-export async function getHomeData(): Promise<HomeData> {
+export async function getHomeData(policy: AccessPolicy): Promise<HomeData> {
   const now = Date.now();
 
-  const [btcRows, btcTrendRows, longRows, shortRows, topMfeRows, reliableRows] = await Promise.all([
+  const [
+    btcRows,
+    btcTrendRows,
+    longRows,
+    shortRows,
+    topMfeRows,
+    sevenDayRows,
+    reliableRows,
+  ] = await Promise.all([
     getBtcRegimeRows(),
     getBtcRegimeTrendRows(),
-    getTopLongSignalRows(5),
-    getTopShortSignalRows(5),
-    getTopMfeSignalRows(3),
+    getTopLongSignalRows(policy.signalListLimit, policy.signalDelayMinutes),
+    getTopShortSignalRows(policy.signalListLimit, policy.signalDelayMinutes),
+    getTopMfeSignalRows(policy.signalCardLimit, policy.signalDelayMinutes),
+    getTopProfitableSignalRows(7, policy.sevenDayLimit, policy.signalDelayMinutes),
     getReliableCoinRows(5),
   ]);
 
@@ -615,9 +726,10 @@ export async function getHomeData(): Promise<HomeData> {
   return {
     btc,
     btcTrend: btcTrendRows.map(toRegimeTrendPoint),
-    longSignals: longRows.map((row) => toSignalView(row, now)),
-    shortSignals: shortRows.map((row) => toSignalView(row, now)),
-    profitableSignals: topMfeRows.map((row) => toSignalView(row, now)),
+    longSignals: longRows.map((row) => toSignalView(row, now, policy.premium)),
+    shortSignals: shortRows.map((row) => toSignalView(row, now, policy.premium)),
+    profitableSignals: topMfeRows.map((row) => toSignalView(row, now, policy.premium)),
+    sevenDayProfitableSignals: sevenDayRows.map((row) => toProfitSignal(row, now)),
     reliableCoins: reliableRows.map(toCoinRank),
   };
 }

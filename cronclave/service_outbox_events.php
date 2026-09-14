@@ -276,8 +276,29 @@ while (true) {
                         );
                         break;
                     }
-                    $dba->insert("signals", $data);
 
+                    // Verifica se já existe sinal ACTIVE para symbol + quote_asset
+                    $symbol = $data[':symbol'] ?? $data['symbol'] ?? null;
+                    $quoteAsset = $data[':quote_asset'] ?? $data['quote_asset'] ?? null;
+                    $signalActive = $dba->select_to_array(
+                        "signals",
+                        "id",
+                        "WHERE symbol=:symbol
+                         AND quote_asset=:quote_asset
+                         AND status='active'
+                         LIMIT 1",
+                        [
+                            ':symbol' => $symbol,
+                            ':quote_asset' => $quoteAsset
+                        ]
+                    );
+
+                    // Só insere se NÃO existir sinal ativo
+                    if (!$signalActive) {
+                        $dba->insert("signals", $data);
+                    }
+
+                    // Marca o evento como processado mesmo se não inserir duplicado
                     $bind = [
                         ':id' => $event['id'],
                         ':status' => 1
@@ -321,9 +342,22 @@ while (true) {
         }
 
 
+        // =====================================================
+        // FECHA SINAIS COM MAIS DE 24 HORAS
+        // =====================================================
+        $dba->update(
+            "signals",
+            "WHERE status='active' 
+             AND detected_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)",
+            [
+                ':status' => 'closed',
+                ':closed_at' => date('Y-m-d H:i:s')
+            ]
+        );
 
-        $menosdays = date('Y-m-d H:i:s',strtotime('-2 days',strtotime( date("Y-m-d H:i:s") )));
+        $menosdays = date('Y-m-d H:i:s',strtotime('-15 days',strtotime( date("Y-m-d H:i:s") )));
         $outbox_events = $db->delete("outbox_events", "WHERE data_cadastro <= '".$menosdays."' ", null);
+        usleep(500000);
 
     } catch (Throwable $e) {
         echo date('Y-m-d H:i:s') . " - ERRO: " . $e->getMessage() . PHP_EOL;

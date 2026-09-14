@@ -20,6 +20,7 @@ export type TimeframeLabel = '15m' | '1h' | '4h' | '1d';
 /** One tradable signal, already formatted for display. */
 export type Signal = {
   id: string;
+  direction: 'LONG' | 'SHORT';
   symbol: string;
   regime: string;
   reliability: number;
@@ -84,11 +85,22 @@ export type RankingEntry = {
   result: string | null;
 };
 
+export type ProfitSignal = {
+  id: string;
+  symbol: string;
+  direction: 'LONG' | 'SHORT';
+  strategy: string;
+  timeframe: string;
+  result: string;
+  age: string;
+};
+
 export type HomeData = {
   btc: BtcRegimeView;
   btcTrend: RegimeTrendPoint[];
   longSignals: Signal[];
   shortSignals: Signal[];
   profitableSignals: Signal[];
+  sevenDayProfitableSignals: ProfitSignal[];
   reliableCoins: CoinRank[];
 };

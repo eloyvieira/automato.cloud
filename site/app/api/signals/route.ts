@@ -2,26 +2,26 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getTopLongSignals, getTopShortSignals } from '@/services/signal.service';
 import { getSession } from '@/lib/auth';
-import { hasPremiumAccess } from '@/lib/permissions';
+import { hasApiAccess } from '@/lib/permissions';
 
 export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!(await hasApiAccess(session.userId))) {
+    return NextResponse.json({ error: 'Premium Weekly required' }, { status: 403 });
+  }
+
   const [longSignals, shortSignals] = await Promise.all([
-    getTopLongSignals(5),
-    getTopShortSignals(5),
+    getTopLongSignals(null, 0),
+    getTopShortSignals(null, 0),
   ]);
 
-  const session = await getSession();
-  const premium = session ? await hasPremiumAccess(session.userId) : false;
-
-  const stripPremium = (signals: any[]) =>
-    signals.map((s) => {
-      const { entryPrice, stopLoss, takeProfit1, takeProfit2, ...rest } = s;
-      return premium ? s : rest;
-    });
-
   return NextResponse.json({
-    long: stripPremium(longSignals),
-    short: stripPremium(shortSignals),
-    premium,
+    long: longSignals,
+    short: shortSignals,
+    realtime: true,
   });
 }

@@ -5,6 +5,9 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import type { RankingKind } from '@/lib/home-types';
 import { getRankingBoard } from '@/services/ranking.service';
+import { getSession } from '@/lib/auth';
+import { getAccessPolicy } from '@/lib/permissions';
+import { isRankingAllowed } from '@/lib/access-policy';
 
 // Rankings are recalculated from the database and cached in Redis for a few
 // minutes, so the page renders per request.
@@ -26,9 +29,11 @@ const TABS: { kind: RankingKind; label: string; note: string }[] = [
   { kind: 'best-swing', label: 'Best Swing', note: 'Active swing signals, most reliable first.' },
 ];
 
-function resolveTab(value: string | string[] | undefined) {
+function resolveTab(value: string | string[] | undefined, allowed: readonly RankingKind[]) {
   const requested = Array.isArray(value) ? value[0] : value;
-  return TABS.find((tab) => tab.kind === requested) ?? TABS[0];
+  return TABS.find((tab) => tab.kind === requested && allowed.includes(tab.kind))
+    ?? TABS.find((tab) => allowed.includes(tab.kind))
+    ?? TABS[0];
 }
 
 function regimeClass(regime: string) {
@@ -42,9 +47,14 @@ export default async function RankingsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { tab } = await searchParams;
-  const active = resolveTab(tab);
-  const rows = await getRankingBoard(active.kind, 20);
+  const [{ tab }, session] = await Promise.all([searchParams, getSession()]);
+  const access = await getAccessPolicy(session?.userId ?? null);
+  const active = resolveTab(tab, access.rankingKinds);
+  const rows = await getRankingBoard(
+    active.kind,
+    access.rankingLimit,
+    access.rankingDelayMinutes,
+  );
   const showResult = active.kind === 'most-profitable';
 
   return (
@@ -54,11 +64,13 @@ export default async function RankingsPage({
       <main className="mx-auto max-w-6xl px-5 py-14 lg:px-8">
         <h1 className="text-3xl font-semibold tracking-tight text-white">Rankings</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Calculated live from real signals. Cached for a few minutes.
+          {access.premium
+            ? 'Real-time rankings from real signals.'
+            : 'Free rankings are delayed by 15 minutes and include a limited set of filters.'}
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2">
-          {TABS.map((item) => (
+          {TABS.filter((item) => isRankingAllowed(access, item.kind)).map((item) => (
             <Link
               key={item.kind}
               href={`/rankings?tab=${item.kind}`}
@@ -120,14 +132,16 @@ export default async function RankingsPage({
         </div>
 
         <div className="mt-6 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-6">
-          <p className="text-sm font-medium text-white">Want full ranking history and filters?</p>
-          <Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:underline">
-            View plans <ArrowRight size={14} />
-          </Link>
+          <p className="text-sm font-medium text-white">{access.premium ? 'Premium Weekly active' : 'Want every ranking filter in real time?'}</p>
+          {!access.premium && (
+            <Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:underline">
+              View Premium Weekly <ArrowRight size={14} />
+            </Link>
+          )}
         </div>
       </main>
 
-      <SiteFooter showPreviewToggle />
+      <SiteFooter />
     </div>
   );
 }

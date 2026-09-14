@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma';
-import { hasPremiumAccess, hasApiAccess } from '../lib/permissions';
+import { getAccessPolicy, getUserAccessTier, hasPremiumAccess, hasApiAccess } from '../lib/permissions';
 
-export { hasPremiumAccess, hasApiAccess };
+export { getAccessPolicy, getUserAccessTier, hasPremiumAccess, hasApiAccess };
 
 export async function getUserSubscriptions(userId: string) {
   return prisma.subscription.findMany({

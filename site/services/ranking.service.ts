@@ -29,6 +29,10 @@ export async function getBestShort(limit = 10) {
 }
 
 /** One board of the /rankings page, built from real signal rows. */
-export async function getRankingBoard(kind: RankingKind, limit = 20) {
-  return getRanking(kind, limit);
+export async function getRankingBoard(
+  kind: RankingKind,
+  limit: number | null = 20,
+  delayMinutes = 0,
+) {
+  return getRanking(kind, limit, delayMinutes);
 }

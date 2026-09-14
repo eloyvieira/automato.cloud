@@ -1,24 +1,33 @@
-'use client';
-
-import Link from 'next/link';
-import { ArrowRight, LockKeyhole } from 'lucide-react';
 import type { Direction, Signal } from '@/lib/home-types';
+
 import { RegimeBadge } from './RegimeBadge';
-import { usePremiumPreview } from './PremiumPreview';
 
-export function SignalCard({ signal, direction }: { signal: Signal; direction: Direction }) {
-  const { premium } = usePremiumPreview();
-
+export function SignalCard({
+  signal,
+  direction,
+}: {
+  signal: Signal;
+  direction: Direction;
+}) {
   return (
     <article className="group rounded-xl border border-white/[0.08] bg-[#121923] p-4 transition hover:border-white/20 hover:bg-[#151f2b]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">{signal.symbol}</p>
+          <p className="text-sm font-semibold text-white">
+            {signal.symbol}
+          </p>
+
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <RegimeBadge tone={direction}>{signal.regime}</RegimeBadge>
-            <span className="text-xs text-slate-500">{signal.age}</span>
+            <RegimeBadge tone={direction}>
+              {signal.regime}
+            </RegimeBadge>
+
+            <span className="text-xs text-slate-500">
+              {signal.age}
+            </span>
           </div>
         </div>
+
         <div className="text-right">
           <p
             className={`text-lg font-semibold ${
@@ -29,26 +38,38 @@ export function SignalCard({ signal, direction }: { signal: Signal; direction: D
           >
             {signal.mfe !== '--' ? signal.mfe : '--'}
           </p>
-          <p className="text-[10px] uppercase tracking-wider text-slate-500">MFE</p>
-          </div>
+
+          <p className="text-[10px] uppercase tracking-wider text-slate-500">
+            MFE
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-y-3 text-xs sm:grid-cols-3">
         <div>
           <p className="text-slate-500">Strategy</p>
-          <p className="mt-1 text-slate-200">{signal.strategy}</p>
+          <p className="mt-1 text-slate-200">
+            {signal.strategy}
+          </p>
         </div>
+
         <div>
           <p className="text-slate-500">Timeframe</p>
-          <p className="mt-1 text-slate-200">{signal.timeframe}</p>
+          <p className="mt-1 text-slate-200">
+            {signal.timeframe}
+          </p>
         </div>
+
         <div>
           <p className="text-slate-500">Category</p>
-          <p className="mt-1 text-slate-200">{signal.category}</p>
+          <p className="mt-1 text-slate-200">
+            {signal.category}
+          </p>
         </div>
       </div>
 
-      <div className="mt-4 gap-2 border-t border-white/[0.06] pt-3 text-xs"
+      <div
+        className="mt-4 gap-2 border-t border-white/[0.06] pt-3 text-xs"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -68,32 +89,23 @@ export function SignalCard({ signal, direction }: { signal: Signal; direction: D
 
           return (
             <div key={label} className="min-w-0">
-              <p className="text-slate-500">{label}</p>
+              <p className="text-slate-500">
+                {label}
+              </p>
 
               <p
                 className={`mt-1 truncate font-medium ${
-                  !premium
-                    ? 'select-none text-slate-600 blur-[3px]'
-                    : isMaeNegative
-                      ? 'text-red-400'
-                      : 'text-slate-100'
+                  isMaeNegative
+                    ? 'text-red-400'
+                    : 'text-slate-100'
                 }`}
               >
-                {premium ? value : '••••••'}
+                {value}
               </p>
             </div>
           );
         })}
       </div>
-
-      {!premium && (
-        <Link
-          href="/pricing"
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] py-2 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/15"
-        >
-          <LockKeyhole size={13} /> Unlock full signal <ArrowRight size={13} />
-        </Link>
-      )}
     </article>
   );
 }

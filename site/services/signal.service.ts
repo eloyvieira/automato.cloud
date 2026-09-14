@@ -2,14 +2,14 @@ import { prisma } from '../lib/prisma';
 import { getTopLongSignalRows, getTopShortSignalRows } from '../lib/home-data';
 import { jsonSafe } from '../lib/serializer';
 
-/** Top active LONG signals, cached in Redis for 5 minutes. */
-export async function getTopLongSignals(limit = 5) {
-  return getTopLongSignalRows(limit);
+/** Active LONG signals. Delay/limit are enforced in the database query. */
+export async function getTopLongSignals(limit: number | null = 5, delayMinutes = 0) {
+  return getTopLongSignalRows(limit, delayMinutes);
 }
 
-/** Top active SHORT signals, cached in Redis for 5 minutes. */
-export async function getTopShortSignals(limit = 5) {
-  return getTopShortSignalRows(limit);
+/** Active SHORT signals. Delay/limit are enforced in the database query. */
+export async function getTopShortSignals(limit: number | null = 5, delayMinutes = 0) {
+  return getTopShortSignalRows(limit, delayMinutes);
 }
 
 export async function getSignalById(id: string) {
