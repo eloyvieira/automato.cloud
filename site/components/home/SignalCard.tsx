@@ -1,5 +1,5 @@
 import type { Direction, Signal } from '@/lib/home-types';
-
+import { Info } from 'lucide-react';
 import { RegimeBadge } from './RegimeBadge';
 
 export function SignalCard({
@@ -89,10 +89,22 @@ export function SignalCard({
 
           return (
             <div key={label} className="min-w-0">
-              <p className="text-slate-500">
-                {label}
-              </p>
+              <div className="inline-flex items-center gap-1">
+                <span className="text-slate-500">{label}</span>
 
+                {label === 'Stop loss' && (
+                  <div className="group/tooltip relative inline-flex">
+                    <Info
+                      size={12}
+                      className="cursor-help text-slate-500 hover:text-slate-300"
+                    />
+
+                    <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-72 -translate-x-1/2 rounded-lg border border-white/10 bg-[#0b1118] p-3 text-left text-xs leading-relaxed text-slate-300 shadow-xl group-hover/tooltip:block">
+                      Safety stop only. Exits are managed dynamically based on continuously updated altcoin analysis.
+                    </div>
+                  </div>
+                )}
+              </div>
               <p
                 className={`mt-1 truncate font-medium ${
                   isMaeNegative

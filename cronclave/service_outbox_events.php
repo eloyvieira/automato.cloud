@@ -280,12 +280,13 @@ while (true) {
                     // Verifica se já existe sinal ACTIVE para symbol + quote_asset
                     $symbol = $data[':symbol'] ?? $data['symbol'] ?? null;
                     $quoteAsset = $data[':quote_asset'] ?? $data['quote_asset'] ?? null;
-                    $signalActive = $dba->select_to_array(
+                    $detectedAt = $data[':detected_at'] ?? $data['detected_at'] ?? null;
+                    $lastSignal = $dba->select_single_to_array(
                         "signals",
-                        "id",
+                        "id, detected_at, status",
                         "WHERE symbol=:symbol
                          AND quote_asset=:quote_asset
-                         AND status='active'
+                         ORDER BY detected_at DESC
                          LIMIT 1",
                         [
                             ':symbol' => $symbol,
@@ -293,8 +294,24 @@ while (true) {
                         ]
                     );
 
+                    $canInsert = true;
+                    if ($lastSignal) {
+                        // Dependendo do retorno da sua classe Database,
+                        // normalmente select_to_array retorna array de linhas.
+                        $last = $lastSignal;
+
+                        $lastDetectedAt = strtotime($last['detected_at']);
+                        $incomingDetectedAt = strtotime($detectedAt);
+
+                        // Só aceita se o NOVO sinal de origem nasceu
+                        // depois das 24h do último sinal armazenado.
+                        if ($incomingDetectedAt <= ($lastDetectedAt + (24 * 60 * 60))) {
+                            $canInsert = false;
+                        }
+                    }
+
                     // Só insere se NÃO existir sinal ativo
-                    if (!$signalActive) {
+                    if (!$canInsert) {
                         $dba->insert("signals", $data);
                     }
 
