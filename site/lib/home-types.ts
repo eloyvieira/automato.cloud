@@ -82,6 +82,7 @@ export type RankingEntry = {
   mae: string;
   strategy: string;
   timeframe: string;
+  detectedAt: string;
   /** Realized result of a closed signal ("+4.20%"), null while it is open. */
   result: string | null;
 };
@@ -90,6 +91,7 @@ export type ProfitSignal = {
   id: string;
   symbol: string;
   direction: 'LONG' | 'SHORT';
+  regime: string;
   strategy: string;
   timeframe: string;
   mfe: string;

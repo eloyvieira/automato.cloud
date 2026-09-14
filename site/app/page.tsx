@@ -145,7 +145,6 @@ export default async function Home() {
         key={signal.id}
         signal={signal}
         direction={signal.direction === 'LONG' ? 'long' : 'short'}
-        premium={access.premium}
       />
     ))}
   </div>

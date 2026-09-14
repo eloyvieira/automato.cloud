@@ -609,6 +609,7 @@ type ProfitableSignalRow = {
   symbol: string;
   quoteAsset: string;
   direction: 'LONG' | 'SHORT';
+  regime: string;
   strategy: PrismaStrategy;
   timeframe: PrismaTimeframe;
   mfe: number;
@@ -736,9 +737,9 @@ export async function getHomeData(policy: AccessPolicy): Promise<HomeData> {
   return {
     btc,
     btcTrend: btcTrendRows.map(toRegimeTrendPoint),
-    longSignals: longRows.map((row) => toSignalView(row, now, policy.premium)),
-    shortSignals: shortRows.map((row) => toSignalView(row, now, policy.premium)),
-    profitableSignals: topMfeRows.map((row) => toSignalView(row, now, policy.premium)),
+    longSignals: longRows.map((row) => toSignalView(row, now)),
+    shortSignals: shortRows.map((row) => toSignalView(row, now)),
+    profitableSignals: topMfeRows.map((row) => toSignalView(row, now)),
     sevenDayProfitableSignals: sevenDayRows.map((row) => toProfitSignal(row, now)),
     reliableCoins: reliableRows.map(toCoinRank),
   };

@@ -64,7 +64,7 @@ export function TopProfitable7DayCard({
                 {signal.symbol}
               </span>
 
-              <RegimeBadge tone={signal.direction}>
+              <RegimeBadge tone={signal.direction === 'LONG' ? 'long' : 'short'}>
                 {signal.regime}
               </RegimeBadge>
 
