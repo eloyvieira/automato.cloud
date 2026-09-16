@@ -191,7 +191,7 @@ while (true) {
             $dba = new Database('automato');
         }
 
-        $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 50", null);
+        $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 52023", null);
         if (!$events) {
             usleep(500000); // 0.5s
             continue;
@@ -275,8 +275,7 @@ while (true) {
                         );
                         break;
                     }
-print_r($data);
-die();
+
                     // Verifica se já existe sinal ACTIVE para symbol + quote_asset
                     $symbol = $data[':symbol'] ?? $data['symbol'] ?? null;
                     $quoteAsset = $data[':quote_asset'] ?? $data['quote_asset'] ?? null;
