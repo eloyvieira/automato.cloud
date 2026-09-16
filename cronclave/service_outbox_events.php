@@ -294,24 +294,8 @@ while (true) {
                         ]
                     );
 
-                    $canInsert = true;
-                    if ($lastSignal) {
-                        // Dependendo do retorno da sua classe Database,
-                        // normalmente select_to_array retorna array de linhas.
-                        $last = $lastSignal;
-
-                        $lastDetectedAt = strtotime($last['detected_at']);
-                        $incomingDetectedAt = strtotime($detectedAt);
-
-                        // Só aceita se o NOVO sinal de origem nasceu
-                        // depois das 24h do último sinal armazenado.
-                        if ($incomingDetectedAt <= ($lastDetectedAt + (24 * 60 * 60))) {
-                            $canInsert = false;
-                        }
-                    }
-
                     // Só insere se NÃO existir sinal ativo
-                    if (!$canInsert) {
+                    if (!$lastSignal) {
                         $dba->insert("signals", $data);
                     }
 
