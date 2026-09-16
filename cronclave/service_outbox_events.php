@@ -286,6 +286,7 @@ while (true) {
                         "id, detected_at, status",
                         "WHERE symbol=:symbol
                          AND quote_asset=:quote_asset
+                         AND status='active'
                          ORDER BY detected_at DESC
                          LIMIT 1",
                         [
