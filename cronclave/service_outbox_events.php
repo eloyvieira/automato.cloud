@@ -186,7 +186,6 @@ function calcularStrengthConfidence($data)
 }
 
 while (true) {
-
     try {
         if ($dba === null) {
             $dba = new Database('automato');
@@ -276,7 +275,8 @@ while (true) {
                         );
                         break;
                     }
-
+print_r($data);
+die();
                     // Verifica se já existe sinal ACTIVE para symbol + quote_asset
                     $symbol = $data[':symbol'] ?? $data['symbol'] ?? null;
                     $quoteAsset = $data[':quote_asset'] ?? $data['quote_asset'] ?? null;
