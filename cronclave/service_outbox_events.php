@@ -191,7 +191,7 @@ while (true) {
             $dba = new Database('automato');
         }
 
-        $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 52023", null);
+        $events = $db->select_to_array("outbox_events", "*", "WHERE status = 0 ORDER BY id ASC LIMIT 100", null);
         if (!$events) {
             usleep(500000); // 0.5s
             continue;
