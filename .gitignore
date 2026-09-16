@@ -1,16 +1,17 @@
-/node_modules
-/.pnp
-.pnp.js
+# dependencies
+**/node_modules/
+**/.pnp
+**/.pnp.js
 
 # testing
-/coverage
+**/coverage/
 
 # next.js
-/.next/
-/out/
+**/.next/
+**/out/
 
 # production
-/build
+**/build/
 
 # misc
 .DS_Store
@@ -28,13 +29,16 @@ yarn-error.log*
 
 # local env files
 .env
+**/.env
 .env*.local
+**/.env*.local
+
 !.env.example
 !**/.env.example
 
 # vercel
-.vercel
+**/.vercel/
 
 # typescript
-*.tsbuildinfo
-next-env.d.ts
+**/*.tsbuildinfo
+**/next-env.d.ts
