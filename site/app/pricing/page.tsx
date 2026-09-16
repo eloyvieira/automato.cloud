@@ -1,0 +1,74 @@
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import { Check, ArrowRight } from 'lucide-react';
+import { SiteFooter } from '@/components/layout/SiteFooter';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+
+export const metadata: Metadata = {
+  title: 'Pricing | Automato',
+  description: 'Free and Premium Weekly plans for crypto signals and market analysis.',
+};
+
+const plans = [
+  {
+    name: 'Free',
+    price: '$0',
+    period: 'forever',
+    features: [
+      'Signals with 15 minute delay',
+      'Up to 5 latest long/short signals',
+      '3 signal cards',
+      'Top 10 profitable signals — 7 day view',
+      'Limited ranking filters',
+      'No API access',
+    ],
+    cta: 'Current plan',
+    highlight: false,
+  },
+  {
+    name: 'Premium Weekly',
+    price: '$9.90',
+    period: '/week',
+    features: [
+      'Real-time signals with no delay',
+      'No signal listing limit',
+      '9 signal cards',
+      'Top 10 profitable signals — 7 day view in real time',
+      'All ranking filters',
+      'API access',
+    ],
+    cta: 'Upgrade to Premium',
+    highlight: true,
+  },
+];
+
+export default function PricingPage() {
+  return (
+    <div className="min-h-screen bg-[#080d14] text-slate-200">
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-5 py-16 lg:px-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Simple, transparent pricing</h1>
+          <p className="mt-3 text-sm text-slate-400">Start free. Upgrade when you need more.</p>
+        </div>
+        <div className="mt-12 grid gap-5 sm:grid-cols-2">
+          {plans.map((plan) => (
+            <div key={plan.name} className={`rounded-xl border p-6 ${plan.highlight ? 'border-emerald-400/30 bg-emerald-400/[0.06]' : 'border-white/[0.08] bg-[#121923]'}`}>
+              {plan.highlight && <span className="mb-3 inline-block rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-semibold text-[#07100b]">Most popular</span>}
+              <h3 className="text-sm font-semibold text-white">{plan.name}</h3>
+              <p className="mt-3"><span className="text-3xl font-semibold text-white">{plan.price}</span><span className="text-sm text-slate-500"> {plan.period}</span></p>
+              <ul className="mt-5 space-y-2.5">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-xs text-slate-400"><Check size={14} className="mt-0.5 shrink-0 text-emerald-400" /> {f}</li>
+                ))}
+              </ul>
+              <Link href="/register" className={`mt-6 flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition ${plan.highlight ? 'bg-emerald-400 text-[#07100b] hover:bg-emerald-300' : 'border border-white/10 text-white hover:border-white/25'}`}>{plan.cta} <ArrowRight size={14} /></Link>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}

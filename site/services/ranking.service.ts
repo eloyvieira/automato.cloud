@@ -1,0 +1,38 @@
+import { prisma } from '../lib/prisma';
+import { getProfitableCoinRows, getRanking, getReliableCoinRows } from '../lib/home-data';
+import type { RankingKind } from '../lib/home-types';
+
+/** Markets ranked by average signal reliability over the last 7 days. */
+export async function getMostReliableCoins(limit = 10) {
+  return getReliableCoinRows(limit);
+}
+
+/** Markets ranked by average realized result of closed signals (last 7 days). */
+export async function getMostProfitableCoins(limit = 10) {
+  return getProfitableCoinRows(limit);
+}
+
+export async function getBestLong(limit = 10) {
+  return prisma.signal.findMany({
+    where: { status: 'active', direction: 'LONG', mfe: { not: null } },
+    orderBy: { mfe: 'desc' },
+    take: limit,
+  });
+}
+
+export async function getBestShort(limit = 10) {
+  return prisma.signal.findMany({
+    where: { status: 'active', direction: 'SHORT', mfe: { not: null } },
+    orderBy: { mfe: 'desc' },
+    take: limit,
+  });
+}
+
+/** One board of the /rankings page, built from real signal rows. */
+export async function getRankingBoard(
+  kind: RankingKind,
+  limit: number | null = 20,
+  delayMinutes = 0,
+) {
+  return getRanking(kind, limit, delayMinutes);
+}

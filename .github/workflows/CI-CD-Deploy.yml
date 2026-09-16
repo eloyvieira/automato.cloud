@@ -1,0 +1,151 @@
+name: CI/CD Deploy Automato Cloud
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ secrets.APP_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ secrets.APP_DIR }}
+        run: npm ci
+
+      - name: Login to Docker Registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | \
+          docker login "${{ secrets.REGISTRY_URL }}" \
+            -u "${{ secrets.REGISTRY_USER }}" \
+            --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --progress=plain \
+            --no-cache \
+            -t "${{ secrets.REGISTRY_URL }}/automato.cloud:latest" \
+            -f "${{ secrets.APP_DIR }}/Dockerfile" \
+            "${{ secrets.APP_DIR }}"
+
+      - name: Push Docker image
+        run: |
+          docker push \
+            "${{ secrets.REGISTRY_URL }}/automato.cloud:latest"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Create deploy directory
+        run: |
+          ssh \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "mkdir -p '${{ secrets.DEPLOY_PATH }}'"
+
+      - name: Copy Docker Compose
+        run: |
+          scp \
+            -o StrictHostKeyChecking=no \
+            docker-compose.yml \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/docker-compose.yml"
+
+      - name: Deploy to Docker Swarm
+        run: |
+          ssh \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
+
+            set -e
+
+            STACK="automato"
+            SERVICE="${STACK}_web"
+            IMAGE="${{ secrets.REGISTRY_URL }}/automato.cloud:latest"
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            COMPOSE_FILE="${DEPLOY_PATH}/docker-compose.yml"
+
+            echo "---------------------------------------"
+            echo "Deploying Automato Cloud"
+            echo "Stack:   $STACK"
+            echo "Service: $SERVICE"
+            echo "Image:   $IMAGE"
+            echo "---------------------------------------"
+
+            echo "Logging into Docker Registry..."
+
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | \
+            docker login "${{ secrets.REGISTRY_URL }}" \
+              -u "${{ secrets.REGISTRY_USER }}" \
+              --password-stdin
+
+            echo "Pulling latest image..."
+
+            docker pull "$IMAGE"
+
+            if docker service inspect "$SERVICE" >/dev/null 2>&1; then
+
+              CURRENT_IMAGE=$(docker service inspect \
+                --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' \
+                "$SERVICE")
+
+              CURRENT_DIGEST=$(echo "$CURRENT_IMAGE" | sed 's/.*@//')
+
+              NEW_DIGEST=$(docker image inspect \
+                "$IMAGE" \
+                --format '{{index .RepoDigests 0}}' 2>/dev/null | \
+                sed 's/.*@//')
+
+              echo "Current digest: ${CURRENT_DIGEST:-<none>}"
+              echo "New digest:     ${NEW_DIGEST:-<none>}"
+
+              if [ -z "$NEW_DIGEST" ]; then
+                echo "Could not determine image digest."
+
+              elif [ "$CURRENT_DIGEST" != "$NEW_DIGEST" ]; then
+                echo "New image detected."
+
+              else
+                echo "Image digest unchanged."
+              fi
+
+            else
+
+              echo "Service does not exist yet."
+
+            fi
+
+            echo "Deploying stack configuration..."
+
+            REGISTRY_URL="${{ secrets.REGISTRY_URL }}" \
+            docker stack deploy \
+              --with-registry-auth \
+              -c "$COMPOSE_FILE" \
+              "$STACK"
+
+            echo "---------------------------------------"
+            echo "Deployment status"
+            echo "---------------------------------------"
+
+            docker service ls
+
+            docker service ps \
+              "$SERVICE" \
+              --no-trunc
+
+            echo "---------------------------------------"
+            echo "Deploy finished."
+            echo "---------------------------------------"
+
+          EOF

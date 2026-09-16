@@ -1,0 +1,30 @@
+services:
+  web:
+    image: ${REGISTRY_URL}/automato.cloud:latest
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - ./site/.env
+
+    deploy:
+      replicas: 1
+
+      restart_policy:
+        condition: on-failure
+
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+
+      rollback_config:
+        order: stop-first
+
+    networks:
+      - automato
+
+networks:
+  automato:
+    driver: overlay
